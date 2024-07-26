@@ -1,0 +1,30 @@
+
+This is a library of codes that allows running different models of the high latitude ionospheric electrodynamics.
+
+
+Available auroral models:
+- Feature Tracking of the Auroral (FTA): Requires AU and AL indices
+- Fuller Rowell and Evans [1986]: Requires hemispheric power, which can be derived using the AE index.
+- OVATION-Prime: Requires IMF and solar wind.
+- OVATION-SME: Requires AE.
+
+Available electric potential models:
+- Weimer: Requires IMF and solar wind.
+
+Available file formats:
+- Binary file from AMIE files.
+
+
+Products that can be provided:
+- High-latitude electric potential (in kV)
+- Diffuse auroral electron total energy flux (in mW/m2 or ergs/cm2/s)
+- Diffuse auroral electron average energy (in keV)
+- Diffuse auroral ion total energy flux (in mW/m2 or ergs/cm2/s)
+- Diffuse auroral ion average energy (in keV)
+- Monoenergetic auroral electron total energy flux (in mW/m2 or ergs/cm2/s)
+- Monoenergetic auroral electron average energy (in keV)
+- Wave-driven auroral electron total energy flux (in mW/m2 or ergs/cm2/s)
+- Wave-driven auroral electron average energy (in keV)
+- Future: high-latitude field-aligned currents
+
+
