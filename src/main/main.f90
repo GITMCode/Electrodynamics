@@ -12,11 +12,16 @@ program test_01
   allocate(model)
   model = ieModel()
 
-  call model % verbose(2)
+  call model % verbose(10)
   call model % efield_model("weimer")
   call model % aurora_model("fta")
   call model % model_dir("data/ext/")
   call model % init()
+
+  call model % imfBz(-5.0)
+  call model % useAeHp()
+  call model % imfAu(100)
+  call model % imfAl(-500)
   
   call report_errors
   
