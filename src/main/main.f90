@@ -20,8 +20,8 @@ program test_01
 
   call model % imfBz(-5.0)
   call model % useAeHp()
-  call model % imfAu(100)
-  call model % imfAl(-500)
+  call model % au(100.0)
+  call model % al(-500.0)
   
   call report_errors
   
