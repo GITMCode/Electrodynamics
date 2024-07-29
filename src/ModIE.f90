@@ -281,7 +281,4 @@ contains
   ! ------------------------------------------------------------
   INCLUDE "grid_subroutines.f90"
   
-  INCLUDE "test.f90"
-  
-  
 end MODULE ModIE
