@@ -26,6 +26,11 @@ integer function efield_interpret_name(efieldString)
   if (trim(efieldLower) == "millstone") &
        efield_interpret_name = iMillstone_
 
+  if (trim(efieldLower) == "hepmay") &
+       efield_interpret_name = iHepMay_
+  if (trim(efieldLower) == "heppnermaynard") &
+       efield_interpret_name = iHepMay_
+  
   if (efield_interpret_name == -1) then
      call set_error("efield model name not understood!")
      call set_error(efieldLower)
