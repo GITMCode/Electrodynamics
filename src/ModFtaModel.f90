@@ -32,19 +32,40 @@ module ModFTAModel
        kk_ef, kb_ef, bk_ef, bb_ef, &
        kk_lat2, kb_lat2, kk_ef2, kb_ef2
 
+  real, dimension(nMltsFta, nLatsFta) :: eFluxResult
+  real, dimension(nMltsFta, nLatsFta) :: AveEResult
+  real, dimension(nMltsFta, nLatsFta) :: LBHLResult
+  real, dimension(nMltsFta, nLatsFta) :: LBHSResult
+  
   real :: AL_split = 500.0
   
 contains
 
   ! ------------------------------------------------------------------------
+  ! 
   ! ------------------------------------------------------------------------
 
-   subroutine run_fta_model(IOr_NeedAU, IOr_NeedAL, EFluxOut, AveEOut, iError)
+  subroutine get_fta_model_result(mlt, lat, eFluxOut, AveEOut)
+    real, intent(in) :: mlt
+    real, intent(in) :: lat
+    real, intent(out) :: eFluxOut
+    real, intent(out) :: AveEOut
+    integer :: iMlt 
+    integer :: iLat
+    iMlt = int(mlt / dMlt) + 1
+    iLat = int((abs(lat) - minLat) / dLat) + 1
+    ! In the FTA model, we take the closest value, since this is flux-based
+    eFluxOut = eFluxResult(iMlt, iLat)
+    AveEOut = AveEResult(iMlt, iLat)
+  end subroutine get_fta_model_result
+
+  ! ------------------------------------------------------------------------
+  ! ------------------------------------------------------------------------
+
+   subroutine update_fta_model(IOr_NeedAU, IOr_NeedAL, iError)
 
      real, intent(in) :: IOr_NeedAU
      real, intent(in) :: IOr_NeedAL
-     real, dimension(nMltsFta, nLatsFta), intent(out)  :: EFluxOut
-     real, dimension(nMltsFta, nLatsFta), intent(out)  :: AveEOut
      integer, intent(out) :: iError
 
      integer :: iAe, iMLat, i, iLat, iLon, iMlt
@@ -62,6 +83,7 @@ contains
         if (.not. isOkFta) then
            iError = 1
            call set_error("Error in initializing FTA model!")
+           return
         endif
      endif
 
@@ -81,13 +103,12 @@ contains
      call calc_full_patterns(mlats0_l, efs0_l, mlats0_s, efs0_s, &
           lbhl, lbhs, eflux, avee)
 
-     EFluxOut = 0.001
-     AveEOut = 1.0
-
-     EFluxOut = eFlux
-     AveEOut = AveE
-      
-   end subroutine run_fta_model
+     LBHLResult = lbhl
+     LBHSResult = lbhs
+     eFluxResult = eflux
+     AveEResult = avee
+     
+   end subroutine update_fta_model
 
   ! -----------------------------------------------------------------
   ! Generic reading of a file
@@ -313,6 +334,7 @@ contains
        kb_ef2(:,:,i) = k_b2(:,idx2)
     enddo
 
+    isInitialized = .true.
     lats_fixed_grid = (/(i, i = 0, nLatsFta - 1, 1)/) * dLat + minLat + dLat/2.0
     
   end subroutine initialize_fta
