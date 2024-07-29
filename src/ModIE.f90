@@ -3,8 +3,12 @@ MODULE ModIE
 
   use ModCharSize
   use ModW05_read_data
+  use w05sc, only: setmodel, epotval
+  use EIE_ModWeimer, only: get_tilt
   use ModFtaModel
-
+  use ModTimeConvert
+  use ModKind
+  
   implicit none
 
   private
@@ -12,14 +16,16 @@ MODULE ModIE
   integer, parameter, public :: iZero_ = 0
   integer, parameter, public :: iWeimer05_ = 1
   integer, parameter, public :: iMillstone_ = 2
+  integer, parameter, public :: iHepMay_ = 3
   integer, parameter, public :: iFTA_ = 1
   integer, parameter, public :: iFRE_ = 2
   integer, parameter, public :: iOvationPrime_ = 3
   integer, parameter, public :: iOvationSme_ = 4
+  real, parameter, public :: rBadValue = -1.0e32
 
   integer, external :: efield_interpret_name
   integer, external :: aurora_interpret_name
-  
+
   type, public :: ieModel
 
      logical :: isOk = .true.
@@ -50,31 +56,50 @@ MODULE ModIE
      real, allocatable, dimension(:,:,:) :: haveDiffuseIeFlux
      real, allocatable, dimension(:,:,:) :: haveDiffuseIAveE
 
+     ! ----------------------------------------------------------------
+     ! These are what the code that is calling this library needs
+     ! ----------------------------------------------------------------
+
+     integer :: neednLats = 0
+     integer :: neednMLTs = 0
+     real, allocatable, dimension(:,:) :: needLats
+     real, allocatable, dimension(:,:) :: needMLTs 
+     
      integer :: iProc = 0
 
      integer :: havenTimes = 0
-     real*8 :: currentTime = 0.0
+     real (kind = Real8_) :: currentTime = rBadValue
 
-     real :: needImfBz = -1e32
-     real :: needImfBy = -1e32
-     real :: needSwV = -1e32
-     real :: needSwN = -1e32
-     real :: needHp = -1e32
-     real :: needHpN = -1e32
-     real :: needHpS = -1e32
-     real :: needAu = -1e32
-     real :: needAl = -1e32
-     real :: needAe = -1e32
+     real :: needImfBz = rBadValue
+     real :: needImfBy = rBadValue
+     real :: needSwV = rBadValue
+     real :: needSwN = rBadValue
+     real :: needHp = rBadValue
+     real :: needHpN = rBadValue
+     real :: needHpS = rBadValue
+     real :: needAu = rBadValue
+     real :: needAl = rBadValue
+     real :: needAe = rBadValue
+     real :: needKp = rBadValue
      logical :: useAeForHp = .false.
+
+     real :: weimerTilt = 0.0
 
    contains
 
+     ! Set verbose level:
      procedure :: verbose => set_verbose
+
+     ! Set model types:
      procedure :: efield_model => set_efield_model
      procedure :: aurora_model => set_aurora_model
      procedure :: filename_north => set_filename_north
      procedure :: filename_south => set_filename_south
+     
+     ! Where to find the data files for empirical models:
      procedure :: model_dir => set_model_dir
+     
+     ! Initialize the library:
      procedure :: init => initialize
 
      ! set indices to run empirical models:
@@ -87,9 +112,30 @@ MODULE ModIE
      procedure :: hpS => set_hps
      procedure :: au => set_au
      procedure :: al => set_al
+     procedure :: ae => set_ae
+     procedure :: kp => set_kp
      procedure :: useAeHp => set_useAeForHp
      procedure :: dontAeHp => unset_useAeForHp
      procedure :: aehp => set_hp_from_ae
+     procedure :: check_indices => run_check_indices
+
+     ! Grid information for the calling code:
+     procedure :: nMlts => set_nMlts
+     procedure :: nLats => set_nLats
+     procedure :: grid => set_grid
+     procedure :: mlts => set_mlts
+     procedure :: lats => set_lats
+
+     procedure :: time_real => set_time_real
+     procedure :: time_ymdhms => set_time_ymdhms
+     procedure :: check_time => run_check_time
+
+     ! Get model results:
+     procedure :: get_potential => run_potential_model
+     procedure :: get_aurora => run_aurora_model
+     procedure :: weimer05 => run_weimer05_model
+     procedure :: hepmay => run_heppner_maynard_model
+     procedure :: fta => run_fta_model
 
   end type ieModel
 
@@ -100,6 +146,9 @@ contains
   subroutine initialize(this)
     class(ieModel) :: this
     character (len = iCharLenIE_) :: modelDirTotal
+    character (len = iCharLenIE_) :: inFileNameTotal
+    integer :: UnitTmp_ = 76
+    integer :: iError = 0
 
     if (this%iDebugLevel > 1) &
          write(*,*) "==> Model data directory : ", trim(this%modelDir)
@@ -111,6 +160,19 @@ contains
     !/
     if (this % iEfield_ == iWeimer05_) &
          call read_all_files(this%modelDir)
+
+    if (this % iEfield_ == iHepMay_) then
+       inFileNameTotal = 'hmr89.cofcnts'
+       call merge_str(this%modelDir, inFileNameTotal)
+       open(UnitTmp_, file = inFileNameTotal, status='old', iostat = iError)
+       if (iError /= 0) then
+          call set_error('Error opening heppner maynard file :')
+          call set_error(inFileNameTotal)
+       else
+          call gethmr(UnitTmp_)
+          close(UnitTmp_)
+       endif
+    endif
 
     !\
     ! --------------------------------------------------------------------
@@ -125,7 +187,6 @@ contains
     
   end subroutine initialize
 
-  
   ! ------------------------------------------------------------
   ! Set the verbose level for the library:
   subroutine set_verbose(this, level)
@@ -135,208 +196,79 @@ contains
   end subroutine set_verbose
   
   ! ------------------------------------------------------------
-  ! set efield model
-  subroutine set_efield_model(this, efield_model)
-    class(ieModel) :: this
-    character (len = *), intent(in) :: efield_model
-    if (this%iDebugLevel > 0) &
-         write(*,*) "=> Setting efield model to : ", efield_model
-    this%iEfield_ = efield_interpret_name(efield_model)
-    if (this%iDebugLevel > 0) &
-         write(*,*) "=> That is model : ", this%iEfield_
-  end subroutine set_efield_model
-  
-  ! ------------------------------------------------------------
-  ! set aurora model
-  subroutine set_aurora_model(this, aurora_model)
-    class(ieModel) :: this
-    character (len = *), intent(in) :: aurora_model
-    if (this%iDebugLevel > 0) &
-         write(*,*) "=> Setting aurora model to : ", aurora_model
-    this%iAurora_ = aurora_interpret_name(aurora_model)
-    if (this%iDebugLevel > 0) &
-         write(*,*) "=> That is model : ", this%iAurora_
-  end subroutine set_aurora_model
-  
-  ! ------------------------------------------------------------
-  ! filename for north
-  subroutine set_filename_north(this, filename)
-    class(ieModel) :: this
-    character (len = *), intent(in) :: filename
-    if (this%iDebugLevel > 0) &
-         write(*,*) "=> Setting north file name to : ", filename
-    this%northFile = filename
-  end subroutine set_filename_north
-  
-  ! ------------------------------------------------------------
-  ! filename for south
-  subroutine set_filename_south(this, filename)
-    class(ieModel) :: this
-    character (len = *), intent(in) :: filename
-    if (this%iDebugLevel > 0) &
-         write(*,*) "=> Setting south file name to : ", filename
-    this%southFile = filename
-  end subroutine set_filename_south
-  
-  ! ------------------------------------------------------------
-  ! set the directory for finding all of the coef files
-  subroutine set_model_dir(this, dir)
-    class(ieModel) :: this
-    character (len = *), intent(in) :: dir
-    if (this%iDebugLevel > 0) &
-         write(*,*) "=> Setting model directory to : ", dir
-    this%modelDir = dir
-  end subroutine set_model_dir
+  ! Check indices to see if the model has what it needs:
+  subroutine run_check_time(ie)
+    class(ieModel) :: ie
+    if (ie%currentTime == rBadValue) then
+       call set_error("current time not set!")
+       call set_error("   --> need to call one of the set_time routines!")
+    endif
+    return
+  end subroutine run_check_time
 
+  ! ------------------------------------------------------------
+  ! Set the current time to run the empirical model
+  subroutine set_time_real(this, ut)
+    class(ieModel) :: this
+    real (kind = Real8_), intent(in) :: ut
+    integer :: iYear
+    integer :: iMonth
+    integer :: iDay
+    integer, dimension(7) :: itime
+    real :: rHour
+    
+    this%currentTime = ut
+
+    if (this % iEfield_ == iWeimer05_) then
+       call time_real_to_int(ut, itime)
+       iYear = itime(1)
+       iMonth = itime(2)
+       iDay = itime(3)
+       rHour = float(iTime(4)) + float(iTime(5))/60.0
+       this % weimerTilt = get_tilt(iYear, iMonth, iDay, rHour)
+    endif
+  end subroutine set_time_real
+  
+  ! ------------------------------------------------------------
+  ! Set the current time to run the empirical model
+  subroutine set_time_ymdhms(this, iYear, iMonth, iDay, iHour, iMin, iSec)
+    class(ieModel) :: this
+    integer, intent(in) :: iYear
+    integer, intent(in) :: iMonth
+    integer, intent(in) :: iDay
+    integer, intent(in) :: iHour
+    integer, intent(in) :: iMin
+    integer, intent(in) :: iSec
+    integer :: iTime(1:7)
+    real (kind = Real8_) :: ut
+
+    iTime(1) = iYear
+    iTime(2) = iMonth
+    iTime(3) = iDay
+    iTime(4) = iHour
+    iTime(5) = iMin
+    iTime(6) = iSec
+    iTime(7) = 0
+    call time_int_to_real(iTime, ut)
+    call this % time_real(ut)
+  end subroutine set_time_ymdhms
+  
   ! ------------------------------------------------------------
   ! Set indices routines
   ! ------------------------------------------------------------
-
+  INCLUDE "model_subroutines.f90"
+  
   ! ------------------------------------------------------------
-  ! set IMF Bz
-  subroutine set_bz(this, value)
-    class(ieModel) :: this
-    real, intent(in) :: value
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> Setting imf bz : ", value
-    this%needImfBz = value
-  end subroutine set_bz
-
+  ! Set indices routines
   ! ------------------------------------------------------------
-  ! set IMF By
-  subroutine set_by(this, value)
-    class(ieModel) :: this
-    real, intent(in) :: value
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> Setting imf by : ", value
-    this%needImfBy = value
-  end subroutine set_by
-
+  INCLUDE "indices_subroutines.f90"
+  
   ! ------------------------------------------------------------
-  ! set solar wind velocity
-  subroutine set_swv(this, value)
-    class(ieModel) :: this
-    real, intent(in) :: value
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> Setting Solar Wind Velocity: ", value
-    ! Make sure that this velocity is a positive value:
-    this%needSwV = abs(value)
-  end subroutine set_swv
-
+  ! Set grid routines
   ! ------------------------------------------------------------
-  ! set solar wind density
-  subroutine set_swn(this, value)
-    class(ieModel) :: this
-    real, intent(in) :: value
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> Setting Solar Wind Density: ", value
-    this%needSwN = value
-  end subroutine set_swn
-
-  ! ------------------------------------------------------------
-  ! set the hemispheric power (in gigawatts)
-  subroutine set_hp(this, value)
-    class(ieModel) :: this
-    real, intent(in) :: value
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> Setting Hemispheric Power (in both hems) : ", value
-    this%needHp = value
-    ! If the user calls this routine, then it sets the north and south HPs
-    this%needHpN = value
-    this%needHpS = value
-  end subroutine set_hp
-
-  ! ------------------------------------------------------------
-  ! set north hemispheric power (in gigawatts)
-  subroutine set_hpn(this, value)
-    class(ieModel) :: this
-    real, intent(in) :: value
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> Setting Hemispheric Power (in north) : ", value
-    this%needHpN = value
-  end subroutine set_hpn
-
-  ! ------------------------------------------------------------
-  ! set south hemispheric power (in gigawatts)
-  subroutine set_hps(this, value)
-    class(ieModel) :: this
-    real, intent(in) :: value
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> Setting Hemispheric Power (in south) : ", value
-    this%needHpS = value
-  end subroutine set_hps
-
-  ! ------------------------------------------------------------
-  ! set Hemispheric Power from AE
-  subroutine set_hp_from_ae(this, value)
-    class(ieModel) :: this
-    real, intent(in) :: value
-    if (this%useAeForHp) then
-       ! Set the hemispheric power based on the AE index:
-       this%needHp = 0.102 * value + 8.953
-       this%needHpN = this%needHp
-       this%needHpS = this%needHp
-       if (this%iDebugLevel > 2) then
-          write(*,*) "=> Setting HP from AE. AE = ", value
-          write(*,*) "                       HP = ", this%needHp
-       endif
-    endif
-  end subroutine set_hp_from_ae
-         
-  ! ------------------------------------------------------------
-  ! set AU (and derive AE)
-  subroutine set_au(this, value)
-    class(ieModel) :: this
-    real, intent(in) :: value
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> Setting AU (and deriving AE): ", value
-    this%needAu = value
-    ! derive AE, done in both functions so that the last one called works
-    this%needAe = this%needAu - this%needAl
-    call this%aehp(this%needAe)
-  end subroutine set_au
-
-  ! ------------------------------------------------------------
-  ! set AL (and derive AE)
-  subroutine set_al(this, value)
-    class(ieModel) :: this
-    real, intent(in) :: value
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> Setting AL (and deriving AE): ", value
-    this%needAl = value
-    ! derive AE, done in both functions so that the last one called works
-    this%needAe = this%needAu - this%needAl
-    call this%aehp(this%needAe)
-  end subroutine set_al
-
-  ! ------------------------------------------------------------
-  ! set AE
-  subroutine set_ae(this, value) 
-    class(ieModel) :: this
-    real, intent(in) :: value
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> Setting AE : ", value
-    this%needAe = value
-    call this%aehp(this%needAe)
-  end subroutine set_ae
-
-  ! ------------------------------------------------------------
-  ! set Use AE to determine HP to true
-  subroutine set_useAeForHp(this)
-    class(ieModel) :: this
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> Using AE to specify the HP!"
-    this%useAeForHp = .true.
-  end subroutine set_useAeForHp
-
-  ! ------------------------------------------------------------
-  ! set Use AE to determine HP to false
-  subroutine unset_useAeForHp(this)
-    class(ieModel) :: this
-    if (this%iDebugLevel > 2) &
-         write(*,*) "=> NOT Using AE to specify the HP!"
-    this%useAeForHp = .false.
-  end subroutine unset_useAeForHp
-
+  INCLUDE "grid_subroutines.f90"
+  
+  INCLUDE "test.f90"
+  
   
 end MODULE ModIE
