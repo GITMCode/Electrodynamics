@@ -6,6 +6,7 @@ MODULE ModIE
   use w05sc, only: setmodel, epotval
   use EIE_ModWeimer, only: get_tilt
   use ModFtaModel
+  use ModIHP
   use ModTimeConvert
   use ModKind
   
@@ -19,6 +20,7 @@ MODULE ModIE
   integer, parameter, public :: iHepMay_ = 3
   integer, parameter, public :: iFTA_ = 1
   integer, parameter, public :: iFRE_ = 2
+  integer, parameter, public :: iPEM_ = 3
   integer, parameter, public :: iOvationPrime_ = 3
   integer, parameter, public :: iOvationSme_ = 4
   real, parameter, public :: rBadValue = -1.0e32
@@ -136,6 +138,7 @@ MODULE ModIE
      procedure :: weimer05 => run_weimer05_model
      procedure :: hepmay => run_heppner_maynard_model
      procedure :: fta => run_fta_model
+     procedure :: hpi_pem => run_hpi_pem_model
 
   end type ieModel
 
@@ -147,6 +150,7 @@ contains
     class(ieModel) :: this
     character (len = iCharLenIE_) :: modelDirTotal
     character (len = iCharLenIE_) :: inFileNameTotal
+    character (len = iCharLenIE_) :: name
     integer :: UnitTmp_ = 76
     integer :: iError = 0
 
@@ -183,6 +187,15 @@ contains
        modelDirTotal = this%modelDirFta
        call merge_str(this%modelDir, modelDirTotal)
        call initialize_fta(modelDirTotal)
+    endif
+
+    if (this % iAurora_ == iFRE_) then
+       name = 'ihp'
+       call read_conductance_model(name, this%modelDir, this%iDebugLevel)       
+    endif
+    if (this % iAurora_ == iPEM_) then
+       name = 'pem'
+       call read_conductance_model(name, this%modelDir, this%iDebugLevel)       
     endif
     
   end subroutine initialize

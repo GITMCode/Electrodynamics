@@ -30,7 +30,7 @@ program test_01
 
   call model % verbose(10)
   call model % efield_model("hepmay")
-  call model % aurora_model("fta")
+  call model % aurora_model("pem")
   call model % model_dir("data/ext/")
   call model % init()
 

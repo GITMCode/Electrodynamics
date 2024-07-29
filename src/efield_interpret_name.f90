@@ -64,6 +64,11 @@ integer function aurora_interpret_name(auroraString)
   
   if (trim(auroraLower) == "fre") &
        aurora_interpret_name = iFRE_
+  if (trim(auroraLower) == "ihp") &
+       aurora_interpret_name = iFRE_
+  
+  if (trim(auroraLower) == "pem") &
+       aurora_interpret_name = iPEM_
   
   if ((trim(auroraLower) == "ovation") .or. &
        (trim(auroraLower) == "ovationprime")) &

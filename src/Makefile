@@ -16,6 +16,7 @@ OBJECTS = \
 	ModWeimer05.o\
 	hmr89.o\
 	ModFtaModel.o\
+	ModIHP.o\
 	ModIE.o\
 	tools.o\
 	efield_interpret_name.o

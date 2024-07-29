@@ -175,6 +175,9 @@
     if (.not. isOk) return
 
     if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE)
+    ! These two models are the same, because they use the same
+    if (ie%iAurora_ == iFRE_) call ie%hpi_pem(eFlux, AveE)
+    if (ie%iAurora_ == iPEM_) call ie%hpi_pem(eFlux, AveE)
 
     return
   end subroutine run_aurora_model
@@ -211,4 +214,35 @@
   end subroutine run_fta_model
 
 
+  ! ------------------------------------------------------------
+  ! run HPI Model, providing aveE and E-Flux
+  subroutine run_hpi_pem_model(ie, eFlux, AveE)
+    class(ieModel) :: ie
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: eFlux
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: AveE
+    real :: eFluxVal, AveEVal, hp
+    integer :: iError = 0, iMlt, iLat
+    
+    do iMLT = 1, ie%neednMLTs
+       do iLat = 1, ie%neednLats
+          if (ie%needLats(iMlt, iLat) > 0) then
+             hp = ie%needHpN
+          else
+             hp = ie%needHpS
+          endif
+          call get_auroral_conductance( &
+               ie%needMlts(iMlt, iLat), &
+               ie%needLats(iMlt, iLat), &
+               hp, &
+               eFluxVal, AveEVal)
+          eFlux(iMlt, iLat) = eFluxVal
+          AveE(iMlt, iLat) = AveEVal
+       enddo
+    enddo
+    return
+  end subroutine run_hpi_pem_model
+
+  
   
