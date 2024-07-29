@@ -10,6 +10,7 @@ Available auroral models:
 
 Available electric potential models:
 - Weimer: Requires IMF and solar wind.
+- Heppner-Maynard: Requires IMF and Kp.
 
 Available file formats:
 - Binary file from AMIE files.

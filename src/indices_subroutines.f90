@@ -17,11 +17,33 @@ subroutine run_check_indices(this)
           set_error("Solar Wind Density not set!")
   endif
 
+  if (this % iEfield_ == iHepMay_) then
+     if (this % needImfBz == rBadValue) &
+          call set_error("IMF Bz not set!")
+     if (this % needImfBy == rBadValue) &
+          call set_error("IMF By not set!")
+     if (this % needKp == rBadValue) &
+          call set_error("Kp not set!")
+  endif
+
   if (this % iAurora_ == iFta_) then
      if (this % needAu == rBadValue) &
           call set_error("Aurora - Upper index not set!")
      if (this % needAl == rBadValue) &
           call set_error("Aurora - Lower index not set!")
+  endif
+
+  if (this % iAurora_ == iFRE_) then
+     if (this % needHpN == rBadValue) &
+          call set_error("Aurora - Hemispheric Power (north) index not set!")
+     if (this % needHpS == rBadValue) &
+          call set_error("Aurora - Hemispheric Power (south) index not set!")
+  endif
+  if (this % iAurora_ == iPEM_) then
+     if (this % needHpN == rBadValue) &
+          call set_error("Aurora - Hemispheric Power (north) index not set!")
+     if (this % needHpS == rBadValue) &
+          call set_error("Aurora - Hemispheric Power (south) index not set!")
   endif
   
 end subroutine run_check_indices
