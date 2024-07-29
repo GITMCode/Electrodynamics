@@ -6,9 +6,15 @@ include ../build/Makefile.def
 MYLIB = ../lib/libIE.a
 
 OBJECTS = \
+	ModKind.o\
+	ModNumConst.o\
+	ModConst.o\
 	ModCharSize.o\
 	ModErrors.o\
+	ModTimeConvert.o\
+	ModWeimer.o\
 	ModWeimer05.o\
+	hmr89.o\
 	ModFtaModel.o\
 	ModIE.o\
 	tools.o\
