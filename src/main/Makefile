@@ -8,6 +8,11 @@ SEARCH = -I..
 EXE = ../ie_test.exe
 
 OBJECTS = \
+	ModApex.o\
+	apex_routines.o\
+	apex_more.o\
+	ModMain.o\
+	output.o\
 	main.o
 
 ${EXE}: ${OBJECTS}
