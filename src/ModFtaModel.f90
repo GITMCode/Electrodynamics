@@ -52,11 +52,17 @@ contains
     real, intent(out) :: AveEOut
     integer :: iMlt 
     integer :: iLat
+    if (abs(lat) < minLat) then
+       eFluxOut = 0.0
+       AveEOut = 2.0
+       return
+    endif
     iMlt = int(mlt / dMlt) + 1
     iLat = int((abs(lat) - minLat) / dLat) + 1
     ! In the FTA model, we take the closest value, since this is flux-based
     eFluxOut = eFluxResult(iMlt, iLat)
     AveEOut = AveEResult(iMlt, iLat)
+    return
   end subroutine get_fta_model_result
 
   ! ------------------------------------------------------------------------
