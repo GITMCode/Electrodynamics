@@ -26,7 +26,7 @@ Cflag4  = ${CFLAG} ${PRECISION} ${OPT4}
 	${COMPILE.f90} ${Cflag3} $<
 
 .f.o:
-	${COMPILE.f90} ${Cflag3} $<
+	${COMPILE.f77} -ffixed-line-length-132 ${Cflag3} $<
 
 clean:
 	rm -f *~ core *.o *.mod fort.* a.out *.exe *.a *.so *.protex
