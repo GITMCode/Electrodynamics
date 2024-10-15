@@ -130,13 +130,13 @@ for iT in ind:
 
     norm = cm.colors.Normalize(vmax=mini, vmin=maxi)
     if (mini >= 0):
-        cmap = cm.plasma
+        cmap = cm.Reds
     else:
         cmap = cm.bwr
 
     cax = ax.pcolor(theta, r, eflux2d, \
                     vmin = mini, vmax = maxi, cmap = cmap)
-    CS = ax.contour(theta, r, pot2d, levels, colors = 'w')
+    CS = ax.contour(theta, r, pot2d, levels, colors = 'k')
     smin = "Min : %.2f" % np.min(pot2d)
     smax = "Max : %.2f" % np.max(pot2d)
     print(smin, smax)
