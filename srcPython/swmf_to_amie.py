@@ -29,11 +29,11 @@ def parse_args():
 # Get the input arguments
 args = parse_args()
 
-filelist = sorted(glob(args.dir + '/*.idl'))
+filelist = sorted(glob(args.dir + '/it*.idl'))
 
 if (len(filelist) <= 1):
     print(' --> Checking for gz files:')
-    filelist = sorted(glob(args.dir + '/*.gz'))
+    filelist = sorted(glob(args.dir + '/it*.gz'))
 
 dataToWriteN, dataToWriteS = read_all_rim_files(filelist)
 
