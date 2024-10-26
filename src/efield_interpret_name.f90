@@ -31,6 +31,13 @@ integer function efield_interpret_name(efieldString)
   if (trim(efieldLower) == "heppnermaynard") &
        efield_interpret_name = iHepMay_
   
+  if (trim(efieldLower) == "amie") &
+       efield_interpret_name = iAmiePot_
+  if (trim(efieldLower) == "amiefile") &
+       efield_interpret_name = iAmiePot_
+  if (trim(efieldLower) == "swmffile") &
+       efield_interpret_name = iAmiePot_
+  
   if (efield_interpret_name == -1) then
      call set_error("efield model name not understood!")
      call set_error(efieldLower)
@@ -74,6 +81,13 @@ integer function aurora_interpret_name(auroraString)
        (trim(auroraLower) == "ovationprime")) &
        aurora_interpret_name = iOvationPrime_
 
+  if (trim(auroraLower) == "amie") &
+       aurora_interpret_name = iAmieAur_
+  if (trim(auroraLower) == "amiefile") &
+       aurora_interpret_name = iAmieAur_
+  if (trim(auroraLower) == "swmffile") &
+       aurora_interpret_name = iAmieAur_
+  
   if (aurora_interpret_name == -1) then
      call set_error("aurora model name not understood!")
      call set_error(auroraLower)
