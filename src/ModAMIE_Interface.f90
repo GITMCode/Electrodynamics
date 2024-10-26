@@ -589,13 +589,26 @@ contains
     enddo
     if (this % lats(1) > 89.9) this % lats(1) = 90.0
 
-    ! Need to just set the header length at the current file position!
+    ! The header length should be this:
     this % headerLength = &
          4 * 3 + 8 + &
          4 * this % nLats + 8 + &
          4 * this % nMlts + 8 + &
          4 + 8 + &
-         (30 + 8) * this % nVars + 3
+         (30 + 8) * this % nVars
+    
+    if (AMIE_iDebugLevel > 2) &
+         write(*,*) 'calculated header length : ', this % headerLength
+
+    ! But, we noticed that the variable names can be any length, as
+    ! long as they are longer than 30 characters.  This means that the
+    ! exact length of the header is dependent on these string lengths,
+    ! which are hard to measure.  So, instead of calculating the
+    ! header length, just assign it to the current file position since
+    ! we are at the exact end of the header now:
+    this % headerLength = ftell(iUnitAmie_)
+    if (AMIE_iDebugLevel > 2) &
+         write(*,*) 'current file position : ', this % headerLength
 
     this % oneTimeLength = &
          6 * 4 + 8 + &
