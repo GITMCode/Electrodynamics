@@ -20,7 +20,8 @@
   
   ! ------------------------------------------------------------
   ! set grid 
-  subroutine set_grid(this, MltsIn, LatsIn) 
+  subroutine set_grid(this, MltsIn, LatsIn)
+    use ModAMIE_Interface, only: set_interpolation_indices
     class(ieModel) :: this
     real, dimension(this%neednMlts, this%neednLats), intent(in) :: MltsIn
     real, dimension(this%neednMlts, this%neednLats), intent(in) :: LatsIn
@@ -28,6 +29,12 @@
          write(*,*) "=> Setting Grid"
     call this%mlts(MltsIn)
     call this%lats(LatsIn)
+
+    if (this % iEfield_ == iAmiePot_ .or. &
+         this % iAurora_ == iAmieAur_) then
+       call set_interpolation_indices( &
+            this%neednMlts, this%neednLats, this%needMlts, this%needLats)
+    endif
   end subroutine set_grid
   
   ! ------------------------------------------------------------
