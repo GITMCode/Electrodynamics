@@ -3,7 +3,7 @@ subroutine output_ie(iError)
 
   use ModMain
   use ModErrors
-  use ModTimeConvert
+  use ModTimeAmie
   
   implicit none
 
@@ -34,7 +34,7 @@ subroutine output_ie(iError)
 
      write(LunMainOutput) nLats, nLons, nTimes
      if (isGeographic) then
-        write(LunMainOutput) 90.0 - geoLats(1,:)
+        write(LunMainOutput) 90.0 - abs(geoLats(1,:))
         write(LunMainOutput) geoLons(:,1)/15.0
         write(LunMainOutput) 5
         write(LunMainOutput) 'Electric Potential (kV)       '
@@ -43,7 +43,7 @@ subroutine output_ie(iError)
         write(LunMainOutput) 'Magnetic Latitude (deg)       '
         write(LunMainOutput) 'Magnetic Local Time (hours)   '
      else
-        write(LunMainOutput) 90.0 - magLats(1,:)
+        write(LunMainOutput) 90.0 - abs(magLats(1,:))
         write(LunMainOutput) magMlts(:,1)
         write(LunMainOutput) 3
         write(LunMainOutput) 'Electric Potential (kV)       '
