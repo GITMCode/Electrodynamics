@@ -2,12 +2,13 @@
 MODULE ModIE
 
   use ModCharSize
+  use ModTimeAmie
   use ModW05_read_data
   use w05sc, only: setmodel, epotval
   use EIE_ModWeimer, only: get_tilt
   use ModFtaModel
   use ModIHP
-  use ModTimeConvert
+  use ModAMIE_Interface, only: initialize_amie_files, update_amie_files
   use ModKind
   
   implicit none
@@ -15,14 +16,21 @@ MODULE ModIE
   private
 
   integer, parameter, public :: iZero_ = 0
+  
+  ! Electric Potential Types:
   integer, parameter, public :: iWeimer05_ = 1
   integer, parameter, public :: iMillstone_ = 2
   integer, parameter, public :: iHepMay_ = 3
+  integer, parameter, public :: iAmiePot_ = 4
+
+  ! Auroral Types:
   integer, parameter, public :: iFTA_ = 1
   integer, parameter, public :: iFRE_ = 2
   integer, parameter, public :: iPEM_ = 3
   integer, parameter, public :: iOvationPrime_ = 3
   integer, parameter, public :: iOvationSme_ = 4
+  integer, parameter, public :: iAmieAur_ = 5
+  
   real, parameter, public :: rBadValue = -1.0e32
 
   integer, external :: efield_interpret_name
@@ -51,13 +59,24 @@ MODULE ModIE
      integer :: havenMLTs = 0
      integer :: havenBLKs = 0
      real, allocatable, dimension(:,:,:) :: haveLats
-     real, allocatable, dimension(:,:,:) :: haveMLTs 
+     real, allocatable, dimension(:,:,:) :: haveMLTs
+     ! Field-aligned Currents:
+     real, allocatable, dimension(:,:,:) :: haveFac
+     ! Potentials:
      real, allocatable, dimension(:,:,:) :: havePotential
+     ! Electron diffuse:
      real, allocatable, dimension(:,:,:) :: haveDiffuseEeFlux
      real, allocatable, dimension(:,:,:) :: haveDiffuseEAveE
+     ! Ion diffuse:
      real, allocatable, dimension(:,:,:) :: haveDiffuseIeFlux
      real, allocatable, dimension(:,:,:) :: haveDiffuseIAveE
-
+     ! Discrete or Monoenergetic:
+     real, allocatable, dimension(:,:,:) :: haveMonoEeFlux
+     real, allocatable, dimension(:,:,:) :: haveMonoEAveE
+     ! Broadband or Wave-drive:
+     real, allocatable, dimension(:,:,:) :: haveWaveEeFlux
+     real, allocatable, dimension(:,:,:) :: haveWaveEAveE
+     
      ! ----------------------------------------------------------------
      ! These are what the code that is calling this library needs
      ! ----------------------------------------------------------------
@@ -65,7 +84,7 @@ MODULE ModIE
      integer :: neednLats = 0
      integer :: neednMLTs = 0
      real, allocatable, dimension(:,:) :: needLats
-     real, allocatable, dimension(:,:) :: needMLTs 
+     real, allocatable, dimension(:,:) :: needMLTs
      
      integer :: iProc = 0
 
@@ -162,9 +181,14 @@ contains
     ! Electric Field Models
     ! --------------------------------------------------------------------
     !/
+
+    ! --------------
+    ! --- Weimer ---
     if (this % iEfield_ == iWeimer05_) &
          call read_all_files(this%modelDir)
 
+    ! -------------------------
+    ! --- Heppner & Maynard ---
     if (this % iEfield_ == iHepMay_) then
        inFileNameTotal = 'hmr89.cofcnts'
        call merge_str(this%modelDir, inFileNameTotal)
@@ -176,6 +200,12 @@ contains
           call gethmr(UnitTmp_)
           close(UnitTmp_)
        endif
+    endif
+
+    ! ------------------
+    ! --- AMIE Files ---
+    if (this % iEfield_ == iAmiePot_) then
+       call initialize_amie_files(this % northFile, this % southFile, this % iDebugLevel)
     endif
 
     !\
@@ -232,6 +262,8 @@ contains
     
     this%currentTime = ut
 
+    ! Now, do some updating of different models if needed:
+
     if (this % iEfield_ == iWeimer05_) then
        call time_real_to_int(ut, itime)
        iYear = itime(1)
@@ -240,6 +272,12 @@ contains
        rHour = float(iTime(4)) + float(iTime(5))/60.0
        this % weimerTilt = get_tilt(iYear, iMonth, iDay, rHour)
     endif
+
+    if (this % iEfield_ == iAmiePot_ .or. &
+         this % iAurora_ == iAmieAur_) then
+       call update_amie_files(ut)
+    endif
+    
   end subroutine set_time_real
   
   ! ------------------------------------------------------------

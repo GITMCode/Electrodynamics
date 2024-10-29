@@ -11,12 +11,13 @@ OBJECTS = \
 	ModConst.o\
 	ModCharSize.o\
 	ModErrors.o\
-	ModTimeConvert.o\
+	ModTimeAmie.o\
 	ModWeimer.o\
 	ModWeimer05.o\
 	hmr89.o\
 	ModFtaModel.o\
 	ModIHP.o\
+	ModAMIE_Interface.o\
 	ModIE.o\
 	tools.o\
 	efield_interpret_name.o

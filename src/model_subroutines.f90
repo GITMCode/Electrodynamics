@@ -57,6 +57,8 @@
   ! run efield model
 
   subroutine run_potential_model(ie, potential)
+
+    use ModAMIE_Interface, only: get_amie_potential
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(out) :: potential
@@ -73,6 +75,8 @@
 
     if (ie%iEfield_ == iWeimer05_) call ie%weimer05(potential)
     if (ie%iEfield_ == iHepMay_) call ie%hepmay(potential)
+
+    if (ie%iEfield_ == iAmiePot_) call get_amie_potential(potential)
 
     return
   end subroutine run_potential_model
@@ -160,6 +164,9 @@
   ! run aurora model
 
   subroutine run_aurora_model(ie, eflux, avee)
+    use ModAMIE_Interface, only: &
+         get_amie_electron_diffuse_eflux, &
+         get_amie_electron_diffuse_avee
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(out) :: eFlux
@@ -179,6 +186,11 @@
     if (ie%iAurora_ == iFRE_) call ie%hpi_pem(eFlux, AveE)
     if (ie%iAurora_ == iPEM_) call ie%hpi_pem(eFlux, AveE)
 
+    if (ie%iAurora_ == iAmieAur_) then
+       call get_amie_electron_diffuse_eflux(eFlux)
+       call get_amie_electron_diffuse_avee(AveE)
+    endif
+    
     return
   end subroutine run_aurora_model
 
