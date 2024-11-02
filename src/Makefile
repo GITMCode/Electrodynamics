@@ -20,7 +20,7 @@ OBJECTS = \
 	ModAMIE_Interface.o\
 	ModIE.o\
 	tools.o\
-	efield_interpret_name.o
+	interpret_names.o
 
 LIB:
 	make ${MYLIB}
