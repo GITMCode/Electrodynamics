@@ -746,7 +746,7 @@ C          starting point
       IF (A .LT. 1.) THEN
 	WRITE (0,'(''APEX: A can not be less than 1; A, REQ, HTA: '',1P3
      +E15.7)') A,REQ,HTA
-	CALL EXIT (1)
+C	CALL EXIT (1)
       ENDIF
       RASQ = ACOS (SQRT(1./A))*RTOD
       ALAT = SIGN (RASQ,ZMAG)

@@ -66,7 +66,17 @@ program test_01
 
   ! Initialize the IE library after setting it up:
   call model % init()
-  
+
+  ! Super hacky way to stop running. 
+  ! If there were errors initializing, deallocate everything, lol :)
+  if (.not. isOk) then
+   call deallocate_all_variables()
+   write (*,*) " ============ =================="
+   write (*,*) " non graceful exit! see errors!"
+   write(*,*) " This will be nicer when run normally."
+   write (*,*) " ============ =================="
+  endif
+
   ! This is for main, not for the IE library:
   ! Handle Start Time:
   iTime_I(1) = 2011
