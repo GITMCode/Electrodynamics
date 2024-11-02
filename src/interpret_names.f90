@@ -73,7 +73,9 @@ integer function aurora_interpret_name(auroraString)
        aurora_interpret_name = iFRE_
   if (trim(auroraLower) == "ihp") &
        aurora_interpret_name = iFRE_
-  
+  if (trim(auroraLower) == "hpi") &
+       aurora_interpret_name = iFRE_
+
   if (trim(auroraLower) == "pem") &
        aurora_interpret_name = iPEM_
   
