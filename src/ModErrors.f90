@@ -30,5 +30,22 @@ contains
     enddo
   end subroutine report_errors
 
+  subroutine check_errors()
+
+    ! Call this to check if there are any errors:
+    !  will change isOk to false & call report_errors()
+    ! Otherwise, continute.
+    if (nErrors == 0) then
+      isOk = .true. 
+      return
+    endif
+    
+    ! This means there are errors. Make it known!
+    if (isOk) call set_error("error! found errors and I still think isOk")
+    isOk = .false.
+    call report_errors()
+    return
+    
+  end subroutine check_errors
   
 end module ModErrors
