@@ -212,8 +212,8 @@
        return
     endif
 
-    do iMLT = 1, ie%neednMLTs
-       do iLat = 1, ie%neednLats
+    do iMLT = 1, ie%neednMLTs -1
+       do iLat = 1, ie%neednLats -1
           call get_fta_model_result( &
                ie%needMlts(iMlt, iLat), &
                ie%needLats(iMlt, iLat), &
