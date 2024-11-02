@@ -166,6 +166,8 @@ contains
   ! ------------------------------------------------------------
   ! Initialize all of the different models
   subroutine initialize(this)
+    use ModErrors
+
     class(ieModel) :: this
     character (len = iCharLenIE_) :: modelDirTotal
     character (len = iCharLenIE_) :: inFileNameTotal
@@ -227,6 +229,8 @@ contains
        name = 'pem'
        call read_conductance_model(name, this%modelDir, this%iDebugLevel)       
     endif
+
+    call check_errors()
     
   end subroutine initialize
 
