@@ -720,6 +720,8 @@ contains
       enddo
     endif
 
+    if (.not. isOk) return
+
     ! Check to see if some of these exist:
     if (this % iMap_(iPotential_) < 1) then
       call set_error("Could not find Potential in file!")
