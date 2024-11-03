@@ -36,5 +36,5 @@ ${MYLIB}: ${OBJECTS}
 	${AR} ${MYLIB} ${OBJECTS}
 
 SHARELIB: DEPEND
-	MYLIB = ../../../src/libIE.a
 	make ${MYLIB}
+	@ln -s ../lib/libIE.a ${LIBDIR}/libIE.a
