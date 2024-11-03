@@ -71,12 +71,18 @@
     call ie%check_time()
     call ie%check_indices()
 
-    if (.not. isOk) return
+    if (.not. isOk) then
+      call report_errors
+      call set_error("Leaving run_potential_model")
+      return
+    endif
 
     if (ie%iEfield_ == iWeimer05_) call ie%weimer05(potential)
     if (ie%iEfield_ == iHepMay_) call ie%hepmay(potential)
 
     if (ie%iEfield_ == iAmiePot_) call get_amie_potential(potential)
+
+    call check_errors()
 
     return
   end subroutine run_potential_model
@@ -179,7 +185,10 @@
     call ie%check_time()
     call ie%check_indices()
 
-    if (.not. isOk) return
+    if (.not. isOk) then
+      call set_error("Leaving run_aurora_model")
+      return
+    endif
 
     if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE)
     ! These two models are the same, because they use the same
