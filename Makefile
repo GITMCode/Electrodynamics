@@ -19,3 +19,6 @@ rundir:
 
 clean:
 	make allclean
+
+LIB:
+	@cd src; make SHARELIB
