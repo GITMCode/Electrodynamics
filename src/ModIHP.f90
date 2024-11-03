@@ -17,7 +17,7 @@ Module ModIHP
   real, dimension(mndx) :: halmin, pedmin, avk50, efx50
 
   real, dimension(0:lonmdx,0:latmdx,mndx) :: &
-       halar, pedar, avkar, efxar
+       halar=0.0, pedar=0.0, avkar=0.0, efxar=0.0
 
   real, dimension(nConductanceSolutions) :: ConductanceBackground
 
