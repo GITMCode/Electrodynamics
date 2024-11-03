@@ -933,7 +933,7 @@ contains
   subroutine get_amie_values(iVarToGetIn, valueOut)
 
     integer, intent(in) :: iVarToGetIn
-    real, intent(out) ::  valueOut(nMltsNeeded, nLatsNeeded)
+    real, intent(inout) ::  valueOut(nMltsNeeded, nLatsNeeded)
     integer :: iMlt, iLat, iB, iM, iL
     real :: dM, dL
     
@@ -964,7 +964,7 @@ contains
   ! --------------------------------------------------------------------
 
   subroutine get_amie_potential(potentialOut)
-    real, intent(out) ::  PotentialOut(nMltsNeeded, nLatsNeeded)
+    real, intent(inout) ::  PotentialOut(nMltsNeeded, nLatsNeeded)
     if (AMIE_iDebugLevel > 3) &
          write(*,*) "=> Getting Electric Potential from AMIE"
     call get_amie_values(iPotential_, PotentialOut)
@@ -975,7 +975,7 @@ contains
   ! --------------------------------------------------------------------
 
   subroutine get_amie_electron_diffuse_eflux(elecDiffEfluxOut)
-    real, intent(out) ::  elecDiffEfluxOut(nMltsNeeded, nLatsNeeded)
+    real, intent(inout) ::  elecDiffEfluxOut(nMltsNeeded, nLatsNeeded)
     if (AMIE_iDebugLevel > 3) &
          write(*,*) "=> Getting Electron Diffuse Energy Flux from AMIE"
     call get_amie_values(iEle_diff_eflux_, elecDiffEfluxOut)
@@ -986,7 +986,7 @@ contains
   ! --------------------------------------------------------------------
 
   subroutine get_amie_electron_diffuse_avee(elecDiffAveEOut)
-    real, intent(out) ::  elecDiffAveEOut(nMltsNeeded, nLatsNeeded)
+    real, intent(inout) ::  elecDiffAveEOut(nMltsNeeded, nLatsNeeded)
     if (AMIE_iDebugLevel > 3) &
          write(*,*) "=> Getting Electron Diffuse Average Energy from AMIE"
     call get_amie_values(iEle_diff_avee_, elecDiffAveEOut)

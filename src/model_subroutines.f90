@@ -93,12 +93,11 @@
   subroutine run_weimer05_model(ie, potential)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: potential
+                    ie%neednLats), intent(inout) :: potential
     real :: currentTilt = rBadValue, lastTilt = rBadValue
     real :: potVal
 
     integer :: iMLT, iLat
-    potential = 0.0
 
     do iMLT = 1, ie%neednMLTs
        do iLat = 1, ie%neednLats
@@ -136,12 +135,11 @@
   subroutine run_heppner_maynard_model(ie, potential)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: potential
+                    ie%neednLats), intent(inout) :: potential
     real :: currentTilt = rBadValue, lastTilt = rBadValue
     real :: potVal, eTheta, ePhi
 
     integer :: iMLT, iLat, iFirst
-    potential = 0.0
 
     iFirst = 1
     do iMLT = 1, ie%neednMLTs
@@ -209,9 +207,9 @@
   subroutine run_fta_model(ie, eFlux, AveE)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: eFlux
+                    ie%neednLats), intent(inout) :: eFlux
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: AveE
+                    ie%neednLats), intent(inout) :: AveE
     real :: eFluxVal, AveEVal
     integer :: iError = 0, iMlt, iLat
     
@@ -240,9 +238,9 @@
   subroutine run_hpi_pem_model(ie, eFlux, AveE)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: eFlux
+                    ie%neednLats), intent(inout) :: eFlux
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: AveE
+                    ie%neednLats), intent(inout) :: AveE
     real :: eFluxVal, AveEVal, hp
     integer :: iError = 0, iMlt, iLat
     
