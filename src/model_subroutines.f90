@@ -130,6 +130,7 @@
     if (.not. doneAtLeastOnce) call set_error("No weimer Potential. all zero... Why???")
 
     return
+
   end subroutine run_weimer05_model
   
   ! ------------------------------------------------------------

@@ -17,4 +17,5 @@ rundir:
 	mkdir run
 	cd run ; ln -s ../src/ie_test.exe ; ln -s ../data .
 
-
+clean:
+	make allclean
