@@ -47,15 +47,16 @@ program test_01
   call model % verbose(10)
 
   ! Set the electric potential model:
-  !call model % efield_model("hepmay")
-  !call model % efield_model("weimer05")
-  call model % efield_model("amie")
+!   call model % efield_model("hepmay")
+  call model % efield_model("weimer05")
+!   call model % efield_model("amie")
 
   ! Set aurora model:
-  !call model % aurora_model("hpi")
-  !call model % aurora_model("pem")
-  !call model % aurora_model("fta")
-  call model % aurora_model("amie")
+!   call model % aurora_model("hpi")
+  call model % aurora_model("fre")
+!   call model % aurora_model("pem")
+!   call model % aurora_model("fta")
+!   call model % aurora_model("amie")
 
   ! Set where the code can find the model files:
   call model % model_dir("data/ext/")
@@ -189,12 +190,19 @@ program test_01
           
      ! Get potential from the IE library:
      call model % get_potential(potential)
-     write(*,*) '  --> CPCP : ', maxval(potential) - minval(potential)
      ! Get electron diffuse aurora from the IE library:
      call model % get_aurora(eDiffuseEflux, eDiffuseAvee)
+     !   write(*,*) potential
+
+     call output_ie(iError)
+     if (iError /= 0) call set_error("Main: Error in output_ie")
+
+     
+     write(*,*) '  --> CPCP : ', maxval(potential) - minval(potential)
      write(*,*) '  --> max eflux : ', maxval(eDiffuseEflux)
      write(*,*) '  --> max ave-e : ', maxval(eDiffuseAveE)
-     call output_ie
+     
+     if (.not. isOk) exit
 
   enddo
 

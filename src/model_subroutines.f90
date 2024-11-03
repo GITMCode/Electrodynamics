@@ -99,6 +99,8 @@
 
     integer :: iMLT, iLat
 
+    logical :: doneAtLeastOnce=.false.
+
     do iMLT = 1, ie%neednMLTs
        do iLat = 1, ie%neednLats
           if (abs(ie%needLats(iMlt, iLat)) > 45.0) then
@@ -123,9 +125,11 @@
                   potVal)
              ! Store potential and convert to V:
              potential(iMlt, iLat) = potVal * 1000.0
+             if (.not. (potVal .eq. 0.0)) doneAtLeastOnce=.true.
           endif
        enddo
     enddo
+    if (.not. doneAtLeastOnce) call set_error("No weimer Potential. all zero... Why???")
 
     return
   end subroutine run_weimer05_model
@@ -183,10 +187,10 @@
     call ie%check_time()
     call ie%check_indices()
 
-    if (.not. isOk) then
-      call set_error("Leaving run_aurora_model")
-      return
-    endif
+   !  if (.not. isOk) then
+   !    call set_error("Leaving run_aurora_model")
+   !    return
+   !  endif
 
     if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE)
     ! These two models are the same, because they use the same
