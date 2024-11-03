@@ -126,7 +126,7 @@ contains
 
     integer :: iError = 0
     integer :: LunIndices_
-    character (len = iCharLenFta_), intent(in) :: NameOfIndexFile
+    character (len = iCharLenFta_),intent(in) :: NameOfIndexFile
     character (len = iCharLenLong_) :: line
   
     logical :: done
@@ -140,6 +140,7 @@ contains
     open(LunIndices_, file = NameOfIndexFile, status = "old", iostat = ierror)
 
     if (ierror.ne.0) then
+       write(*,*) "Could not find file : ", NameOfIndexFile
        isOkFta = .false.
        iError = 1
        call set_error("Error in reading FTA file: ")
@@ -180,13 +181,11 @@ contains
   
     implicit none
 
-    double precision, dimension(nMltsFta, nParams),&
-                      intent(out) :: k_k, k_b, k_k2, k_b2, b_k, b_b
-    double precision, dimension(nMltsFta, nParams) :: tmp2
+    double precision, dimension(nMltsFta, nParams) :: k_k, k_b, k_k2, k_b2
+    double precision, dimension(nMltsFta, nParams) :: b_k, b_b, tmp2
     character (len = 10) :: param, forder
     character (len = 10) :: emis_type
-    character (len = iCharLenFta_), intent(in) :: DataDir
-    character (len = iCharLenFta_) :: NameOfIndexFile
+    character (len = iCharLenFta_) :: NameOfIndexFile, DataDir
     integer :: i
 
     forder = 'r1'
@@ -247,9 +246,8 @@ contains
   subroutine interp_to_lat_grid(mlat0, efs0, efs)
     
     implicit none
-    real, dimension(nLatsFta):: mlat
-    real, dimension(nEnergies), intent(in):: mlat0, efs0
-    real, dimension(nLatsFta), intent(out):: efs
+    real, dimension(nLatsFta):: mlat, efs
+    real, dimension(nEnergies):: mlat0, efs0
     real, dimension(:), allocatable :: tmp
     integer, dimension(:), allocatable :: idxt, idxt2
 
@@ -308,7 +306,7 @@ contains
 
   subroutine initialize_fta(dataDir)
 
-    character (len = iCharLenFta_), intent(in) :: dataDir
+    character (len = iCharLenFta_) :: dataDir
 
     double precision, dimension(nMltsFta, nParams) :: &
          k_k, k_b, b_k, b_b, k_k2, k_b2, tmp2
@@ -356,13 +354,12 @@ contains
     implicit none
     real, intent(in) :: AUs, ALs_n
     real :: ALs
-    real, dimension(nMltsFta, nEnergies), intent(out) :: mlat_p, ef_p
     real, dimension(nMltsFta, nEnergies):: cf_b_lat, cf_k_lat, cf_b_ef, cf_k_ef, &
-         mlat_b0, ef_b0, &
+         mlat_p, ef_p, mlat_b0, ef_b0, &
          cf_k_lat2, cf_k_ef2 
     
     integer :: i
-    character (len = 10), intent(in) :: emis_type
+    character (len = 10) :: emis_type
 
     integer :: iEmission = 0
     integer :: iMlt,iEngergy
@@ -464,12 +461,9 @@ contains
     real, dimension(nMltsFta, nEnergies), intent(in) :: mlats0_l, efs0_l
     real, dimension(nMltsFta, nEnergies), intent(in) :: mlats0_s, efs0_s
     real, dimension(nMltsFta, nLatsFta), intent(out) :: lbhl, lbhs, avee, eflux 
-    real, dimension(nLatsFta):: emission_lat
+    real, dimension(80):: emission_lat
     real, dimension(nEnergies) :: emission_en, lats_en
     integer :: i
-
-    lbhl = 0.0
-    lbhs = 0.0
     
     do i = 1, nMltsFta
        ! bin and interp lbhl in each MLT sector
