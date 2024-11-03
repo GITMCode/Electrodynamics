@@ -10,7 +10,7 @@ program test_01
 
   type(ieModel), pointer :: model
 
-  integer :: iMlt, iLat, iLon
+  integer :: iMlt, iLat, iLon, iError
 
   real :: dLat, dMlt, dLon
   real (kind = Real8_) :: dt, jan1Time
