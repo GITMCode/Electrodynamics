@@ -4,6 +4,7 @@ default : LIB
 include ../build/Makefile.def
 
 -include ../../../Makefile.def
+-include ../../../Makefile.conf
 -include Makefile.DEPEND
 
 MYLIB = ../lib/libIE.a
@@ -26,15 +27,17 @@ OBJECTS = \
 	interpret_names.o
 
 DEPEND:
-	@perl ${SCRIPTDIR}/depend.pl -I${SHAREDIR} ${OBJECTS}
+	@perl ${SCRIPTDIR}/depend.pl  ${SEARCH} ${LIBDIR} ${OBJECTS}
 
 LIB:
 	make ${MYLIB}
 
-${MYLIB}: ${OBJECTS}
-	rm -rf ${MYLIB}
-	${AR} ${MYLIB} ${OBJECTS}
+${MYLIB}: ${MF} ${OBJECTS}
+	@echo
+	@echo 'creating LibIE'
+	@echo
+	${AR} ${MYLIB} ${OBJECTS} ${MODULES}
 
 SHARELIB: DEPEND
 	make ${MYLIB}
-	@ln -s ../lib/libIE.a ${LIBDIR}/libIE.a
+	@cp ../lib/libIE.a ${LIBDIR}/libIE.a
