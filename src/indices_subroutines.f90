@@ -4,7 +4,7 @@
 ! Check indices to see if the model has what it needs:
 
 subroutine run_check_indices(this)
-  class(ieModel) :: this
+  class(ieModel), intent(inout) :: this
 
   if (this % iEfield_ == iWeimer05_) then
      if (this % needImfBz == rBadValue) &
@@ -51,7 +51,7 @@ end subroutine run_check_indices
 ! ------------------------------------------------------------
 ! set IMF Bz
 subroutine set_bz(this, value)
-  class(ieModel) :: this
+  class(ieModel), intent(inout) :: this
   real, intent(in) :: value
   if (this%iDebugLevel > 2) &
        write(*,*) "=> Setting imf bz : ", value
@@ -61,7 +61,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set IMF By
   subroutine set_by(this, value)
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, intent(in) :: value
     if (this%iDebugLevel > 2) &
          write(*,*) "=> Setting imf by : ", value
@@ -71,7 +71,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set solar wind velocity
   subroutine set_swv(this, value)
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, intent(in) :: value
     if (this%iDebugLevel > 2) &
          write(*,*) "=> Setting Solar Wind Velocity: ", value
@@ -82,7 +82,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set solar wind density
   subroutine set_swn(this, value)
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, intent(in) :: value
     if (this%iDebugLevel > 2) &
          write(*,*) "=> Setting Solar Wind Density: ", value
@@ -92,7 +92,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set the hemispheric power (in gigawatts)
   subroutine set_hp(this, value)
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, intent(in) :: value
     if (this%iDebugLevel > 2) &
          write(*,*) "=> Setting Hemispheric Power (in both hems) : ", value
@@ -105,7 +105,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set north hemispheric power (in gigawatts)
   subroutine set_hpn(this, value)
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, intent(in) :: value
     if (this%iDebugLevel > 2) &
          write(*,*) "=> Setting Hemispheric Power (in north) : ", value
@@ -115,7 +115,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set south hemispheric power (in gigawatts)
   subroutine set_hps(this, value)
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, intent(in) :: value
     if (this%iDebugLevel > 2) &
          write(*,*) "=> Setting Hemispheric Power (in south) : ", value
@@ -125,7 +125,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set Hemispheric Power from AE
   subroutine set_hp_from_ae(this, value)
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, intent(in) :: value
     if (this%useAeForHp) then
        ! Set the hemispheric power based on the AE index:
@@ -142,7 +142,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set AU (and derive AE)
   subroutine set_au(this, value)
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, intent(in) :: value
     if (this%iDebugLevel > 2) &
          write(*,*) "=> Setting AU (and deriving AE): ", value
@@ -155,7 +155,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set AL (and derive AE)
   subroutine set_al(this, value)
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, intent(in) :: value
     if (this%iDebugLevel > 2) &
          write(*,*) "=> Setting AL (and deriving AE): ", value
@@ -168,7 +168,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set AE
   subroutine set_ae(this, value) 
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, intent(in) :: value
     if (this%iDebugLevel > 2) &
          write(*,*) "=> Setting AE : ", value
@@ -179,7 +179,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set Use AE to determine HP to true
   subroutine set_useAeForHp(this)
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     if (this%iDebugLevel > 2) &
          write(*,*) "=> Using AE to specify the HP!"
     this%useAeForHp = .true.
@@ -188,7 +188,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set Use AE to determine HP to false
   subroutine unset_useAeForHp(this)
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     if (this%iDebugLevel > 2) &
          write(*,*) "=> NOT Using AE to specify the HP!"
     this%useAeForHp = .false.
@@ -197,7 +197,7 @@ end subroutine set_bz
   ! ------------------------------------------------------------
   ! set Kp
   subroutine set_kp(this, value) 
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, intent(in) :: value
     if (this%iDebugLevel > 2) &
          write(*,*) "=> Setting Kp : ", value
