@@ -32,11 +32,11 @@ DEPEND:
 LIB:
 	make ${MYLIB}
 
-${MYLIB}: ${MF} ${OBJECTS}
+${MYLIB}: ${OBJECTS}
 	@echo
 	@echo 'creating LibIE'
 	@echo
-	${AR} ${MYLIB} ${OBJECTS} ${MODULES}
+	${AR} ${MYLIB} ${OBJECTS}
 
 SHARELIB: DEPEND
 	make ${MYLIB}
