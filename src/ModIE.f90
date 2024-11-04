@@ -106,6 +106,15 @@ MODULE ModIE
 
      real :: weimerTilt = 0.0
 
+     ! ----------------------------------------------------------------
+     ! To make the indices reading/retrieving a bit more more modular
+     ! ----------------------------------------------------------------
+
+     logical :: doReadMHD = .false.
+     logical :: doReadSME = .false.
+     logical :: doReadKp  = .false.
+     logical :: doReadHPI = .false. ! not actually used yet. remove noaa hpi altogether??
+
    contains
 
      ! Set verbose level:
@@ -186,12 +195,17 @@ contains
 
     ! --------------
     ! --- Weimer ---
-    if (this % iEfield_ == iWeimer05_) &
+    if (this % iEfield_ == iWeimer05_) then
          call read_all_files(this%modelDir)
+         this % doReadMHD = .true.
+    endif
 
     ! -------------------------
     ! --- Heppner & Maynard ---
     if (this % iEfield_ == iHepMay_) then
+       this % doReadMHD = .true.
+       this % doReadKP  = .true.
+
        inFileNameTotal = 'hmr89.cofcnts'
        call merge_str(this%modelDir, inFileNameTotal)
        open(UnitTmp_, file = inFileNameTotal, status='old', iostat = iError)
@@ -216,16 +230,23 @@ contains
     ! --------------------------------------------------------------------
     !/
     if (this % iAurora_ == iFta_) then
+       this % doReadSME = .true.
+
        modelDirTotal = this%modelDirFta
        call merge_str(this%modelDir, modelDirTotal)
        call initialize_fta(modelDirTotal)
     endif
 
     if (this % iAurora_ == iFRE_) then
+       this % doReadHPI = .true.
+
        name = 'ihp'
        call read_conductance_model(name, this%modelDir, this%iDebugLevel)       
     endif
+
     if (this % iAurora_ == iPEM_) then
+       this % doReadHPI = .true. 
+
        name = 'pem'
        call read_conductance_model(name, this%modelDir, this%iDebugLevel)       
     endif
