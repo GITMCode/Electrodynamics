@@ -182,15 +182,25 @@ program test_01
      hp = 0.102 * ae + 8.953
 
      ! Set indices in the IE library:
-     call model % imfBz(imfBz)
-     call model % imfBy(imfBy)
-     call model % swv(swV)
-     call model % swn(swN)
-     call model % kp(4.0)
-     call model % useAeHp()
-     call model % au(au)
-     call model % al(al)
-          
+     if (model % doReadMHD) then
+      call model % imfBz(imfBz)
+      call model % imfBy(imfBy)
+      call model % swv(swV)
+      call model % swn(swN)
+     endif
+     
+     if (model % doReadKP) & 
+      call model % kp(4.0)
+ 
+     if (model % doReadHPI) & 
+      call model % useAeHp()
+     
+     if (model % doReadSME) then
+      call model % au(au)
+      call model % al(al)
+     endif
+     
+     
      ! Get potential from the IE library:
      call model % get_potential(potential)
      ! Get electron diffuse aurora from the IE library:
