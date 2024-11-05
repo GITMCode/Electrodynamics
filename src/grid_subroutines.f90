@@ -40,7 +40,7 @@
   ! ------------------------------------------------------------
   ! set mlts
   subroutine set_mlts(this, MltsIn) 
-    class(ieModel) :: this
+    class(ieModel), intent(inout) :: this
     real, dimension(this%neednMlts, this%neednLats), intent(in) :: MltsIn
     integer :: iError = 0, iMlt, iLat
     if (this%iDebugLevel > 2) &
