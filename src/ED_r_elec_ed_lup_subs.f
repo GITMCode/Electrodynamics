@@ -165,7 +165,7 @@ C     stand-alone, this routine doesn't have to do anything.
       iUnit = io_unit_new()
 
       OPEN(UNIT=iUnit,FILE=
-     |     'EIE/isoelec_edep.dat',FORM='FORMATTED',
+     |     'extIE/isoelec_edep.dat',FORM='FORMATTED',
      +       STATUS='OLD', IOSTAT=IOERR)
 
 C     Loop through the number of energy values
