@@ -4,7 +4,7 @@
 ! Check indices to see if the model has what it needs:
 
 subroutine run_check_indices(this)
-  class(ieModel), intent(inout) :: this
+  class(ieModel) :: this
 
   if (this % iEfield_ == iWeimer05_) then
      if (this % needImfBz == rBadValue) &
