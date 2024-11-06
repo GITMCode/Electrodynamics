@@ -97,8 +97,6 @@
 
     integer :: iMLT, iLat
 
-    logical :: doneAtLeastOnce=.false.
-
     do iMLT = 1, ie%neednMLTs
        do iLat = 1, ie%neednLats
           if (abs(ie%needLats(iMlt, iLat)) > 45.0) then
@@ -123,11 +121,9 @@
                   potVal)
              ! Store potential and convert to V:
              potential(iMlt, iLat) = potVal * 1000.0
-             if (.not. (potVal .eq. 0.0)) doneAtLeastOnce=.true.
           endif
        enddo
     enddo
-    if (.not. doneAtLeastOnce) call set_error("No weimer Potential. all zero... Why???")
 
     return
 
