@@ -117,7 +117,7 @@
              endif
              ! Run Weimer for specific lat and mlt:
              call epotval( &
-                  ie%needLats(iMlt, iLat), &
+                  abs(ie%needLats(iMlt, iLat)), &
                   ie%needMlts(iMlt, iLat), &
                   0.0, &
                   potVal)
