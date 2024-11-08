@@ -45,6 +45,7 @@ contains
     integer, intent(in) :: iDebugLevel
     character (len=iCharLenIE_) :: ihp_file = 'hpke.noaa'
     character (len=iCharLenIE_) :: pem_file = 'hpke2.pem'
+    character (len=iCharLenIE_) :: modelDirTotal
     
     !  NOAA HPI model:  LONGMX=30,LATMX=20,NDX=10,STEPLAT=2.
 
@@ -69,9 +70,10 @@ contains
        if (iDebugLevel > 2) &
             write(*,*) '===> Reading IHP background conductance model'
 
-       call merge_str(NameOfModelDir, ihp_file)
+       modelDirTotal = ihp_file
+       call merge_str(NameOfModelDir, modelDirTotal)
 
-       open(iunit, file = ihp_file, status='old', iostat = ierr)
+       open(iunit, file = modelDirTotal, status='old', iostat = ierr)
        if (ierr /= 0) then
           call set_error('Error opening file in read_conductance_model:')
           call set_error(ihp_file)
@@ -148,7 +150,8 @@ contains
        ndx =  9
        steplat = 1.
 
-       call merge_str(NameOfModelDir, pem_file)
+       modelDirTotal = pem_file
+       call merge_str(NameOfModelDir, modelDirTotal)
 
        open(iunit, file = pem_file, status='old', iostat = ierr)
        if (ierr /= 0) then
