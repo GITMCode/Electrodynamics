@@ -21,12 +21,13 @@ OBJECTS = \
 	hmr89.o\
 	ModFtaModel.o\
 	ModIHP.o\
+        ModIoUnit.o\
 	ModAMIE_Interface.o\
 	ModIE.o\
 	tools.o\
 	ED_ModInterface.o\
 	ED_Interface.o\
-    ED_r_elec_ed_lup_subs.o\
+        ED_r_elec_ed_lup_subs.o\
 	interpret_names.o
 
 DEPEND:
