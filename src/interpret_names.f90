@@ -61,7 +61,6 @@ integer function aurora_interpret_name(auroraString)
 
   auroraLower = auroraString
   call lower_case(auroraLower)
-  write(*,*) "aurora : -->", auroraLower, "<--"
 
   if (trim(auroraLower) == "zero") &
        aurora_interpret_name = iZero_
