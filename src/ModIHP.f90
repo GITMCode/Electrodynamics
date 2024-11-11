@@ -153,7 +153,7 @@ contains
        modelDirTotal = pem_file
        call merge_str(NameOfModelDir, modelDirTotal)
 
-       open(iunit, file = pem_file, status='old', iostat = ierr)
+       open(iunit, file = modelDirTotal, status='old', iostat = ierr)
        if (ierr /= 0) then
           call set_error('Error opening file in read_conductance_model:')
           call set_error(pem_file)
