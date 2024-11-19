@@ -152,6 +152,7 @@ contains
          this % nLats + nCellsPad, &
          this % nTimesGoal), &
          stat = iError)
+    this%dataInMemory = 0.0
     if (iError /= 0) then
        call set_error("Error trying to allocate dataInMemory in initialize")
        return
