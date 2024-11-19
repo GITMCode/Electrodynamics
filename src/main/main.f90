@@ -193,7 +193,8 @@ program test_01
       call model % kp(4.0)
  
      if (model % doReadHPI) & 
-      call model % useAeHp()
+      ! call model % useAeHp()
+     call model%hp(hp)
      
      if (model % doReadSME) then
       call model % au(au)
