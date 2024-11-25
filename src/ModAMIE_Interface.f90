@@ -140,13 +140,15 @@ contains
     call read_amie_header(this)
     call read_amie_times(this)
 
-    allocate(this % timesInMemory(this % nTimesGoal), stat = iError)
+    if (allocated(this%timesInMemory)) deallocate(this%timesInMemory)
+    allocate(this%timesInMemory(this%nTimesGoal), stat=iError)
     if (iError /= 0) then
        call set_error("Error trying to allocate timesInMemory in initialize")
        return
     endif
     
-    allocate(this % dataInMemory( &
+    if (allocated(this%dataInMemory)) deallocate(this%dataInMemory)
+    allocate(this%dataInMemory( &
          nValues, &
          this % nMlts, &
          this % nLats + nCellsPad, &
@@ -157,7 +159,8 @@ contains
        return
     endif
     
-    allocate(this % dataOneTime( &
+    if (allocated(this%dataOneTime)) deallocate(this%dataOneTime)
+    allocate(this%dataOneTime( &
          nValues, &
          this % nMlts, &
          this % nLats + nCellsPad), &
@@ -504,17 +507,20 @@ contains
          write(*,*) "==> nLats, nMlts, nTimes : ", &
          this % nLats, this % nMlts, this % nTimes
     
-    allocate(this % times(this % nTimes), stat = iError)
+    if (allocated(this%times)) deallocate(this%times)
+    allocate(this%times(this%nTimes), stat=iError)
     if (iError /= 0) then
        call set_error("Error trying to allocate times in read_amie_header")
        return
     endif
-    allocate(this % lats(this % nLats), stat = iError)
+    if (allocated(this%lats)) deallocate(this%lats)
+    allocate(this%lats(this%nLats), stat=iError)
     if (iError /= 0) then
        call set_error("Error trying to allocate lats in read_amie_header")
        return
     endif
-    allocate(this % mlts(this % nMlts), stat = iError)
+    if (allocated(this%mlts)) deallocate(this%mlts)
+    allocate(this%mlts(this%nMlts), stat=iError)
     if (iError /= 0) then
        call set_error("Error trying to allocate mlts in read_amie_header")
        return
@@ -634,6 +640,7 @@ contains
     character(len=*), intent(in) :: fileNorth, fileSouth
     integer, intent(in) :: iDebugLevel
     integer :: iError
+    logical :: FileExists
 
     ! 1. set the debug level:
     AMIE_iDebugLevel = iDebugLevel
@@ -651,8 +658,8 @@ contains
       call set_error("Error: AMIE South file does not exist! Ensure it is set correctly.", .true.)
 
     ! 3. Initialize the Northern Hemisphere File:
-
-    allocate(allFiles(2), stat = iError)
+    if (allocated(allFiles)) deallocate(allFiles)
+    allocate(allFiles(2), stat=iError)
     if (iError /= 0) then
        call set_error("Error: allocating allFiles in initiailize_amie_files")
     endif
@@ -878,7 +885,7 @@ contains
 
     enddo
 
-    write(*,*) 'file point!', LatIn, MltIn, LocOut
+    ! write(*, *) 'file point!', LatIn, MltIn, LocOut
     if (LocOut(1) < 1) then
        write(*,*) 'didnt file point!', LatIn, MltIn, allFiles(1) % Lats(1:2)
        stop
