@@ -675,6 +675,15 @@ contains
     ! 2. Define the variable names to look for in the files:
     call AMIE_link_variable_names()
 
+    ! 2.5 Before the next step, let's make sure that AMIE files are set & exist
+    inquire(file=trim(fileNorth), exist=FileExists)
+    if (.not. FileExists) &
+      call set_error("Error: AMIE North file does not exist! Ensure it is set correctly. ", .true.)
+
+    inquire(file=trim(fileSouth), exist=FileExists)
+    if (.not. FileExists) &
+      call set_error("Error: AMIE South file does not exist! Ensure it is set correctly.", .true.)
+
     ! 3. Initialize the Northern Hemisphere File:
 
     allocate(allFiles(2), stat = iError)
