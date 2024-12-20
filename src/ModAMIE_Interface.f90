@@ -921,6 +921,8 @@ contains
 
     enddo
 
+    if (AMIE_iDebugLevel > 3) &
+       write(*, *) 'file point!', LatIn, MLTIn, LocOut
     ! write(*, *) 'file point!', LatIn, MltIn, LocOut
     if (LocOut(1) < 1) then
        write(*,*) 'didnt file point!', LatIn, MltIn, allFiles(1) % Lats(1:2)
