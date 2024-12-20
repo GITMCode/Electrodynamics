@@ -72,9 +72,9 @@
     call ie%check_indices()
 
     if (.not. isOk) then
+      call set_error("Not ok after checking time & indices in run_potential_model.")
       call report_errors
-      call set_error("Not ok, exiting run_potential_model without doing anything.")
-      return
+      ! return ! debated whether to return or not. Probably let the code try and run...
     endif
 
     if (ie%iEfield_ == iWeimer05_) call ie%weimer05(potential)
@@ -162,7 +162,7 @@
 
     return
   end subroutine run_heppner_maynard_model
-  
+
   ! ------------------------------------------------------------
   ! run aurora model
 
@@ -183,8 +183,9 @@
     call ie%check_indices()
 
     if (.not. isOk) then ! I think this is worthwhile to have, but masks errors in potential.
-      call set_error("Not ok, exiting run_aurora_model without doing anything.")
-      return
+      call set_error("Not ok after checking time & indices in run_aurora_model.")
+      call report_errors
+      ! return
     endif
 
     if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE)
