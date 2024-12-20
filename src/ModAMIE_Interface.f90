@@ -633,7 +633,7 @@ contains
   ! Initialize AMIE file system
   ! --------------------------------------------------------------------
 
-  subroutine initialize_amie_files(fileNorth, fileSouth, iDebugLevel)
+  subroutine initialize_amie_files(fileNorth, fileSouth, iDebugLevel, doAmieAur, doAmiePot)
 
     implicit none
     
@@ -641,6 +641,23 @@ contains
     integer, intent(in) :: iDebugLevel
     integer :: iError
     logical :: FileExists
+
+    logical, intent(in), optional :: doAmiePot, doAmieAur
+    logical :: doAmieAur_local, doAmiePot_local
+
+    integer :: iField, iVal
+    
+    ! check logical inputs. If doAmiePot or Aur is not given, default is true:
+    if (.not. present(doAmiePot)) then
+      doAmiePot_local = .true.
+    else
+      doAmiePot_local = doAmiePot
+    endif
+    if (.not. present(doAmieAur)) then
+      doAmieAur_local = .true.
+    else
+      doAmieAur_local = doAmieAur
+    endif
 
     ! 1. set the debug level:
     AMIE_iDebugLevel = iDebugLevel
@@ -666,7 +683,7 @@ contains
 
     ! isNorth = .true., isMirror = .false.
     call allFiles(1) % init(fileNorth, .true., .false.)
-    call AMIE_link_vars_to_keys(allFiles(1))
+    call AMIE_link_vars_to_keys(allFiles(1), doAmiePot_local, doAmieAur_local)
 
     if (trim(fileSouth) == 'mirror') then
        ! isNorth = .false., isMirror = .true.
@@ -675,7 +692,7 @@ contains
        ! isNorth = .false., isMirror = .false.
        call allFiles(2) % init(fileSouth, .false., .false.)
     endif
-    call AMIE_link_vars_to_keys(allFiles(2))
+    call AMIE_link_vars_to_keys(allFiles(2), doAmiePot_local, doAmieAur_local)
     
     return
 
@@ -708,17 +725,35 @@ contains
   ! Link all of the variable names in the files to the proper pointers
   ! --------------------------------------------------------------------
   
-  subroutine AMIE_link_vars_to_keys(this)
+  subroutine AMIE_link_vars_to_keys(this, doAmiePot, doAmieAur)
 
     implicit none
 
     class(amieFile) :: this
+    logical, intent(in), optional :: doAmiePot, doAmieAur
+    logical :: doAmieAur_local, doAmiePot_local
     integer :: iField, iVal
     
+    ! check logical inputs. If doAmiePot or Aur is not given, default is true:
+    if (.not. present(doAmiePot)) then
+      doAmiePot_local = .true.
+    else
+      doAmiePot_local = doAmiePot
+    endif
+    if (.not. present(doAmieAur)) then
+      doAmieAur_local = .true.
+    else
+      doAmieAur_local = doAmieAur
+    endif
+
     do iVal = 1, nValues
       if (AMIE_iDebugLevel > 1) &
         write(*, *) '==> Searching for ', trim(AMIE_Names(iVal))
       do iField = 1, this % nVars
+        ! check if we want potential:
+        if ((.not. doAmiePot_local) .and. (iField <= 2)) cycle
+        ! Check if we want aurora
+        if ((.not. doAmieAur_local) .and. (iField > 2)) cycle
         if (index(this % varNames(iField), trim(AMIE_Names(iVal))) > 0) then
           this % iMap_(iVal) = iField
           if (AMIE_iDebugLevel > 1) &
@@ -739,35 +774,36 @@ contains
     if (.not. isOk) return
 
     ! Check to see if some of these exist:
-    if (this % iMap_(iPotential_) < 1) then
+    if (this % iMap_(iPotential_) < 1 .and. doAmiePot_local) then
       call set_error("Could not find Potential in file!")
     endif
-    if ((this % iMap_(iEle_diff_eflux_) < 1) .or. (this % iMap_(iEle_diff_avee_) < 0)) then
-      call set_error("Could not find Electron Diffuse in file!")
-    endif
+    if (doAmieAur_local) then
+      if ((this % iMap_(iEle_diff_eflux_) < 1) .or. (this % iMap_(iEle_diff_avee_) < 0)) then
+         call set_error("Could not find Electron Diffuse in file!")
+      endif
 
-    if ((this % iMap_(iIon_diff_eflux_) > 0) .and. (this % iMap_(iIon_diff_avee_) > 0)) then
-      this % hasIons = .true.
-      if (AMIE_iDebugLevel > 1) &
-           write(*, *) "==> Input Electrodynamics is using Ions!"
-    else
-      this % hasIons = .false.
+      if ((this % iMap_(iIon_diff_eflux_) > 0) .and. (this % iMap_(iIon_diff_avee_) > 0)) then
+         this % hasIons = .true.
+         if (AMIE_iDebugLevel > 1) &
+            write(*, *) "==> Input Electrodynamics is using Ions!"
+      else
+         this % hasIons = .false.
+      endif
+      if ((this % iMap_(iEle_mono_eflux_) > 0) .and. (this % iMap_(iEle_mono_avee_) > 0)) then
+         this % hasMono = .true.
+         if (AMIE_iDebugLevel > 1) &
+            write(*, *) "==> Input Electrodynamics is using Mono!"
+      else
+         this % hasMono = .false.
+      endif
+      if ((this % iMap_(iEle_wave_eflux_) > 0) .and. (this % iMap_(iEle_wave_avee_) > 0)) then
+         this % hasWave = .true.
+         if (AMIE_iDebugLevel > 1) &
+            write(*, *) "==> Input Electrodynamics is using Ions!"
+      else
+         this % hasWave = .false.
+      endif
     endif
-    if ((this % iMap_(iEle_mono_eflux_) > 0) .and. (this % iMap_(iEle_mono_avee_) > 0)) then
-      this % hasMono = .true.
-      if (AMIE_iDebugLevel > 1) &
-           write(*, *) "==> Input Electrodynamics is using Mono!"
-    else
-      this % hasMono = .false.
-    endif
-    if ((this % iMap_(iEle_wave_eflux_) > 0) .and. (this % iMap_(iEle_wave_avee_) > 0)) then
-      this % hasWave = .true.
-      if (AMIE_iDebugLevel > 1) &
-           write(*, *) "==> Input Electrodynamics is using Ions!"
-    else
-      this % hasWave = .false.
-    endif
-
   end subroutine AMIE_link_vars_to_keys
 
   ! --------------------------------------------------------------------
