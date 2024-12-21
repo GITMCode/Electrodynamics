@@ -12,8 +12,7 @@ integer function efield_interpret_name(efieldString)
 
   efieldLower = efieldString
   call lower_case(efieldLower)
-  write(*,*) "efield : -->", efieldLower, "<--"
-
+  
   if (trim(efieldLower) == "zero") &
        efield_interpret_name = iZero_
   
