@@ -221,7 +221,8 @@ contains
     ! ------------------
     ! --- AMIE Files ---
     if ((this % iEfield_ == iAmiePot_) .or. (this%iAurora_ == iAmieAur_)) then
-       call initialize_amie_files(this % northFile, this % southFile, this % iDebugLevel)
+       call initialize_amie_files(this % northFile, this % southFile, this % iDebugLevel, &
+                                  (this%iEfield_==iAmiePot_), (this%iAurora_==iAmieAur_))
     endif
 
     !\

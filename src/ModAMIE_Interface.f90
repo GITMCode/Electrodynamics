@@ -140,13 +140,15 @@ contains
     call read_amie_header(this)
     call read_amie_times(this)
 
-    allocate(this % timesInMemory(this % nTimesGoal), stat = iError)
+    if (allocated(this%timesInMemory)) deallocate(this%timesInMemory)
+    allocate(this%timesInMemory(this%nTimesGoal), stat=iError)
     if (iError /= 0) then
        call set_error("Error trying to allocate timesInMemory in initialize")
        return
     endif
     
-    allocate(this % dataInMemory( &
+    if (allocated(this%dataInMemory)) deallocate(this%dataInMemory)
+    allocate(this%dataInMemory( &
          nValues, &
          this % nMlts, &
          this % nLats + nCellsPad, &
@@ -158,7 +160,8 @@ contains
        return
     endif
     
-    allocate(this % dataOneTime( &
+    if (allocated(this%dataOneTime)) deallocate(this%dataOneTime)
+    allocate(this%dataOneTime( &
          nValues, &
          this % nMlts, &
          this % nLats + nCellsPad), &
@@ -507,17 +510,20 @@ contains
          write(*,*) "==> nLats, nMlts, nTimes : ", &
          this % nLats, this % nMlts, this % nTimes
     
-    allocate(this % times(this % nTimes), stat = iError)
+    if (allocated(this%times)) deallocate(this%times)
+    allocate(this%times(this%nTimes), stat=iError)
     if (iError /= 0) then
        call set_error("Error trying to allocate times in read_amie_header")
        return
     endif
-    allocate(this % lats(this % nLats), stat = iError)
+    if (allocated(this%lats)) deallocate(this%lats)
+    allocate(this%lats(this%nLats), stat=iError)
     if (iError /= 0) then
        call set_error("Error trying to allocate lats in read_amie_header")
        return
     endif
-    allocate(this % mlts(this % nMlts), stat = iError)
+    if (allocated(this%mlts)) deallocate(this%mlts)
+    allocate(this%mlts(this%nMlts), stat=iError)
     if (iError /= 0) then
        call set_error("Error trying to allocate mlts in read_amie_header")
        return
@@ -642,13 +648,31 @@ contains
   ! Initialize AMIE file system
   ! --------------------------------------------------------------------
 
-  subroutine initialize_amie_files(fileNorth, fileSouth, iDebugLevel)
+  subroutine initialize_amie_files(fileNorth, fileSouth, iDebugLevel, doAmieAur, doAmiePot)
 
     implicit none
     
     character(len=*), intent(in) :: fileNorth, fileSouth
     integer, intent(in) :: iDebugLevel
     integer :: iError
+    logical :: FileExists
+
+    logical, intent(in), optional :: doAmiePot, doAmieAur
+    logical :: doAmieAur_local, doAmiePot_local
+
+    integer :: iField, iVal
+    
+    ! check logical inputs. If doAmiePot or Aur is not given, default is true:
+    if (.not. present(doAmiePot)) then
+      doAmiePot_local = .true.
+    else
+      doAmiePot_local = doAmiePot
+    endif
+    if (.not. present(doAmieAur)) then
+      doAmieAur_local = .true.
+    else
+      doAmieAur_local = doAmieAur
+    endif
 
     ! 1. set the debug level:
     AMIE_iDebugLevel = iDebugLevel
@@ -656,16 +680,25 @@ contains
     ! 2. Define the variable names to look for in the files:
     call AMIE_link_variable_names()
 
-    ! 3. Initialize the Northern Hemisphere File:
+    ! 2.5 Before the next step, let's make sure that AMIE files are set & exist
+    inquire(file=trim(fileNorth), exist=FileExists)
+    if (.not. FileExists) &
+      call set_error("Error: AMIE North file does not exist! Ensure it is set correctly. ", .true.)
 
-    allocate(allFiles(2), stat = iError)
+    inquire(file=trim(fileSouth), exist=FileExists)
+    if (.not. FileExists) &
+      call set_error("Error: AMIE South file does not exist! Ensure it is set correctly.", .true.)
+
+    ! 3. Initialize the Northern Hemisphere File:
+    if (allocated(allFiles)) deallocate(allFiles)
+    allocate(allFiles(2), stat=iError)
     if (iError /= 0) then
        call set_error("Error: allocating allFiles in initiailize_amie_files")
     endif
 
     ! isNorth = .true., isMirror = .false.
     call allFiles(1) % init(fileNorth, .true., .false.)
-    call AMIE_link_vars_to_keys(allFiles(1))
+    call AMIE_link_vars_to_keys(allFiles(1), doAmiePot_local, doAmieAur_local)
 
     if (trim(fileSouth) == 'mirror') then
        ! isNorth = .false., isMirror = .true.
@@ -674,7 +707,7 @@ contains
        ! isNorth = .false., isMirror = .false.
        call allFiles(2) % init(fileSouth, .false., .false.)
     endif
-    call AMIE_link_vars_to_keys(allFiles(2))
+    call AMIE_link_vars_to_keys(allFiles(2), doAmiePot_local, doAmieAur_local)
     
     return
 
@@ -707,17 +740,35 @@ contains
   ! Link all of the variable names in the files to the proper pointers
   ! --------------------------------------------------------------------
   
-  subroutine AMIE_link_vars_to_keys(this)
+  subroutine AMIE_link_vars_to_keys(this, doAmiePot, doAmieAur)
 
     implicit none
 
     class(amieFile) :: this
+    logical, intent(in), optional :: doAmiePot, doAmieAur
+    logical :: doAmieAur_local, doAmiePot_local
     integer :: iField, iVal
     
+    ! check logical inputs. If doAmiePot or Aur is not given, default is true:
+    if (.not. present(doAmiePot)) then
+      doAmiePot_local = .true.
+    else
+      doAmiePot_local = doAmiePot
+    endif
+    if (.not. present(doAmieAur)) then
+      doAmieAur_local = .true.
+    else
+      doAmieAur_local = doAmieAur
+    endif
+
     do iVal = 1, nValues
       if (AMIE_iDebugLevel > 1) &
         write(*, *) '==> Searching for ', trim(AMIE_Names(iVal))
       do iField = 1, this % nVars
+        ! check if we want potential:
+        if ((.not. doAmiePot_local) .and. (iField <= 2)) cycle
+        ! Check if we want aurora
+        if ((.not. doAmieAur_local) .and. (iField > 2)) cycle
         if (index(this % varNames(iField), trim(AMIE_Names(iVal))) > 0) then
           this % iMap_(iVal) = iField
           if (AMIE_iDebugLevel > 1) &
@@ -738,35 +789,36 @@ contains
     if (.not. isOk) return
 
     ! Check to see if some of these exist:
-    if (this % iMap_(iPotential_) < 1) then
+    if (this % iMap_(iPotential_) < 1 .and. doAmiePot_local) then
       call set_error("Could not find Potential in file!")
     endif
-    if ((this % iMap_(iEle_diff_eflux_) < 1) .or. (this % iMap_(iEle_diff_avee_) < 0)) then
-      call set_error("Could not find Electron Diffuse in file!")
-    endif
+    if (doAmieAur_local) then
+      if ((this % iMap_(iEle_diff_eflux_) < 1) .or. (this % iMap_(iEle_diff_avee_) < 0)) then
+         call set_error("Could not find Electron Diffuse in file!")
+      endif
 
-    if ((this % iMap_(iIon_diff_eflux_) > 0) .and. (this % iMap_(iIon_diff_avee_) > 0)) then
-      this % hasIons = .true.
-      if (AMIE_iDebugLevel > 1) &
-           write(*, *) "==> Input Electrodynamics is using Ions!"
-    else
-      this % hasIons = .false.
+      if ((this % iMap_(iIon_diff_eflux_) > 0) .and. (this % iMap_(iIon_diff_avee_) > 0)) then
+         this % hasIons = .true.
+         if (AMIE_iDebugLevel > 1) &
+            write(*, *) "==> Input Electrodynamics is using Ions!"
+      else
+         this % hasIons = .false.
+      endif
+      if ((this % iMap_(iEle_mono_eflux_) > 0) .and. (this % iMap_(iEle_mono_avee_) > 0)) then
+         this % hasMono = .true.
+         if (AMIE_iDebugLevel > 1) &
+            write(*, *) "==> Input Electrodynamics is using Mono!"
+      else
+         this % hasMono = .false.
+      endif
+      if ((this % iMap_(iEle_wave_eflux_) > 0) .and. (this % iMap_(iEle_wave_avee_) > 0)) then
+         this % hasWave = .true.
+         if (AMIE_iDebugLevel > 1) &
+            write(*, *) "==> Input Electrodynamics is using Ions!"
+      else
+         this % hasWave = .false.
+      endif
     endif
-    if ((this % iMap_(iEle_mono_eflux_) > 0) .and. (this % iMap_(iEle_mono_avee_) > 0)) then
-      this % hasMono = .true.
-      if (AMIE_iDebugLevel > 1) &
-           write(*, *) "==> Input Electrodynamics is using Mono!"
-    else
-      this % hasMono = .false.
-    endif
-    if ((this % iMap_(iEle_wave_eflux_) > 0) .and. (this % iMap_(iEle_wave_avee_) > 0)) then
-      this % hasWave = .true.
-      if (AMIE_iDebugLevel > 1) &
-           write(*, *) "==> Input Electrodynamics is using Ions!"
-    else
-      this % hasWave = .false.
-    endif
-
   end subroutine AMIE_link_vars_to_keys
 
   ! --------------------------------------------------------------------
