@@ -62,6 +62,9 @@ program test_01
   call model % model_dir("data/ext/")
 
   ! If we are using AMIE files, set north and south files:
+  !! ALB found (and tested) these on Mia, in case anyone else needs to...
+  ! call model % filename_north("/backup/Software/Electrodynamics/data/ext/SWMF/swmf20110805N.bin")
+  ! call model % filename_south("/backup/Software/Electrodynamics/data/ext/SWMF/swmf20110805S.bin")
   call model % filename_north("/Users/ridley/Data/Gitm/run.20110805/swmf20110805N.bin")
   call model % filename_south("/Users/ridley/Data/Gitm/run.20110805/swmf20110805S.bin")
 
@@ -190,7 +193,7 @@ program test_01
       call model % kp(4.0)
  
      if (model % doReadHPI) & 
-      call model % useAeHp()
+     call model%hp(hp)
      
      if (model % doReadSME) then
       call model % au(au)

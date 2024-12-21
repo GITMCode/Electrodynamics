@@ -154,6 +154,7 @@ contains
          this % nLats + nCellsPad, &
          this % nTimesGoal), &
          stat = iError)
+    this%dataInMemory = 0.0
     if (iError /= 0) then
        call set_error("Error trying to allocate dataInMemory in initialize")
        return
@@ -293,7 +294,8 @@ contains
             file = this % fileName, &
             status = 'old', &
             form = 'UNFORMATTED', &
-            iostat = iError)
+            iostat = iError, &
+            access = 'stream')
 
        if (iError /= 0) then
           call set_error("Error trying to open file in read_amie_data: ")
@@ -307,8 +309,7 @@ contains
           iT = iTime - startIndex + 1
           
           iFilePos = this % headerLength + this % oneTimeLength * (iTime - 1)
-          call fseek(iUnitAmie_, iFilePos, 0)
-          read(iUnitAmie_) ntemp, iyr, imo, ida, ihr, imi
+          read(iUnitAmie_, POS=iFilePos + 8) ntemp, iyr, imo, ida, ihr, imi
           if (AMIE_iDebugLevel > 3) &
                write(*,*) '====> Reading AMIE time : ', ntemp, iyr, imo, ida, ihr, imi
 
@@ -439,6 +440,7 @@ contains
          file = this % fileName, &
          status = 'old', &
          form = 'UNFORMATTED', &
+         access="stream",&
          iostat = iError)
 
     if (iError /= 0) then
@@ -450,10 +452,11 @@ contains
     do iTime = 1, this % ntimes
     
        iFilePos = this % headerLength + this % oneTimeLength * (iTime - 1)
-       call fseek(iUnitAmie_, iFilePos, 0)
-       read(iUnitAmie_) ntemp, iyr, imo, ida, ihr, imi
-       if (AMIE_iDebugLevel > 3) &
+       read(iUnitAmie_, POS=iFilePos+8) ntemp, iyr, imo, ida, ihr, imi
+       if (AMIE_iDebugLevel > 3) then
             write(*,*) '====> Reading AMIE time : ', ntemp, iyr, imo, ida, ihr, imi
+            write(*,*) '====> At file position: ', iFilePos, '  <===='
+       endif
     
        itime_i(1) = iyr
        itime_i(2) = imo
@@ -606,13 +609,25 @@ contains
     if (AMIE_iDebugLevel > 2) &
          write(*,*) 'calculated header length : ', this % headerLength
 
-    ! But, we noticed that the variable names can be any length, as
-    ! long as they are longer than 30 characters.  This means that the
-    ! exact length of the header is dependent on these string lengths,
-    ! which are hard to measure.  So, instead of calculating the
-    ! header length, just assign it to the current file position since
-    ! we are at the exact end of the header now:
-    this % headerLength = ftell(iUnitAmie_)
+         ! But, we noticed that the variable names can be any length, as
+         ! long as they are longer than 30 characters.  This means that the
+         ! exact length of the header is dependent on these string lengths,
+         ! which are hard to measure.  So, instead of calculating the
+         ! header length, just assign it to the current file position since
+         ! we are at the exact end of the header now:
+         ! amie_file_loc = 
+         ! this % headerLength = ftell(iUnitAmie_)
+
+         ! ALB coming here and changing things. `ftell` doesn't work with nagfor, but the 
+         !! "easy" replacement with this doesn't seem to be working either. So this block
+         !! can probably be deleted. 
+         ! INQUIRE(UNIT=iUnitAmie_, RECL=i) !get record length (header size)
+         ! write(*,*) "===>> Found Header length: ", i
+         ! this % headerLength = i
+         !! Or use this to get the index of next record  (breaks when there are multiple times):
+         ! INQUIRE(UNIT=iUnitAmie_, NEXTREC=i) !get next record
+         
+
     if (AMIE_iDebugLevel > 2) &
          write(*,*) 'current file position : ', this % headerLength
 
@@ -921,9 +936,9 @@ contains
 
     enddo
 
-    if (AMIE_iDebugLevel > 3) &
-       write(*, *) 'file point!', LatIn, MLTIn, LocOut
-    ! write(*, *) 'file point!', LatIn, MltIn, LocOut
+    if (AMIE_iDebugLevel > 4) &
+       write(*,*) 'file point!', LatIn, MltIn, LocOut
+
     if (LocOut(1) < 1) then
        write(*,*) 'didnt file point!', LatIn, MltIn, allFiles(1) % Lats(1:2)
        stop
