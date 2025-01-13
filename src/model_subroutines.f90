@@ -5,7 +5,7 @@
     class(ieModel) :: this
     character (len = *), intent(in) :: efield_model
     if (this%iDebugLevel > 0) &
-         write(*,*) "=> Setting efield model to : ", efield_model
+         write(*,*) "=> Setting efield model to : ", trim(efield_model)
     this%iEfield_ = efield_interpret_name(efield_model)
     if (this%iDebugLevel > 0) &
          write(*,*) "=> That is model : ", this%iEfield_
@@ -17,7 +17,7 @@
     class(ieModel) :: this
     character (len = *), intent(in) :: aurora_model
     if (this%iDebugLevel > 0) &
-         write(*,*) "=> Setting aurora model to : ", aurora_model
+         write(*,*) "=> Setting aurora model to : ", trim(aurora_model)
     this%iAurora_ = aurora_interpret_name(aurora_model)
     if (this%iDebugLevel > 0) &
          write(*,*) "=> That is model : ", this%iAurora_
@@ -29,7 +29,7 @@
     class(ieModel) :: this
     character (len = *), intent(in) :: filename
     if (this%iDebugLevel > 0) &
-         write(*,*) "=> Setting north file name to : ", filename
+         write(*,*) "=> Setting north file name to : ", trim(filename)
     this%northFile = filename
   end subroutine set_filename_north
   
@@ -39,7 +39,7 @@
     class(ieModel) :: this
     character (len = *), intent(in) :: filename
     if (this%iDebugLevel > 0) &
-         write(*,*) "=> Setting south file name to : ", filename
+         write(*,*) "=> Setting south file name to : ", trim(filename)
     this%southFile = filename
   end subroutine set_filename_south
   
@@ -49,7 +49,7 @@
     class(ieModel) :: this
     character (len = *), intent(in) :: dir
     if (this%iDebugLevel > 0) &
-         write(*,*) "=> Setting model directory to : ", dir
+         write(*,*) "=> Setting model directory to : ", trim(dir)
     this%modelDir = dir
   end subroutine set_model_dir
 
@@ -72,9 +72,9 @@
     call ie%check_indices()
 
     if (.not. isOk) then
+      call set_error("Not ok after checking time & indices in run_potential_model.")
       call report_errors
-      call set_error("Not ok, exiting run_potential_model without doing anything.")
-      return
+      ! return ! debated whether to return or not. Probably let the code try and run...
     endif
 
     if (ie%iEfield_ == iWeimer05_) call ie%weimer05(potential)
@@ -162,7 +162,7 @@
 
     return
   end subroutine run_heppner_maynard_model
-  
+
   ! ------------------------------------------------------------
   ! run aurora model
 
@@ -183,8 +183,9 @@
     call ie%check_indices()
 
     if (.not. isOk) then ! I think this is worthwhile to have, but masks errors in potential.
-      call set_error("Not ok, exiting run_aurora_model without doing anything.")
-      return
+      call set_error("Not ok after checking time & indices in run_aurora_model.")
+      call report_errors
+      ! return
     endif
 
     if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE)
