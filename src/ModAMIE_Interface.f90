@@ -71,7 +71,9 @@ Module ModAMIE_Interface
      integer :: headerLength = 0
      integer :: oneTimeLength = 0
 
-     ! By default, we don't need any unit conversions:
+     ! Figure out which variables are in the file
+     logical :: hasPotential = .false.
+     logical :: hasDiffuse = .false.
      logical :: hasIons = .false.
      logical :: hasMono = .false.
      logical :: hasWave = .false.
@@ -134,8 +136,8 @@ contains
     this % isNorth = isNorthIn
     this % isMirror = isMirrorIn
 
-    if (AMIE_iDebugLevel > 0) &
-         write(*,*) "=> Initializing AMIE file system with file : ", trim(fileIn)
+    if (AMIE_iDebugLevel > -1) &
+         write(*,*) "> Initializing AMIE file system with file : ", trim(fileIn)
     
     call read_amie_header(this)
     call read_amie_times(this)
@@ -291,8 +293,7 @@ contains
             file = this % fileName, &
             status = 'old', &
             form = 'UNFORMATTED', &
-            iostat = iError, &
-            access = 'stream')
+            iostat = iError)
 
        if (iError /= 0) then
           call set_error("Error trying to open file in read_amie_data: ")
@@ -303,11 +304,12 @@ contains
        ! Move to the correct time:
        this % nTimesInMemory = 0
        do iTime = startIndex, endIndex
-          iT = iTime - startIndex + 1
-          
+          iT = iTime - startIndex + 1          
           iFilePos = this % headerLength + this % oneTimeLength * (iTime - 1)
-          read(iUnitAmie_, POS=iFilePos + 8) ntemp, iyr, imo, ida, ihr, imi
-          if (AMIE_iDebugLevel > 3) &
+          ! removed +8 in line below this!
+          CALL FSEEK(iUnitAmie_, iFilePos, 0, iError)  ! move to OFFSET
+          read(iUnitAmie_) ntemp, iyr, imo, ida, ihr, imi
+          if (AMIE_iDebugLevel > 2) &
                write(*,*) '====> Reading AMIE time : ', ntemp, iyr, imo, ida, ihr, imi
 
           itime_i(1) = iyr
@@ -408,7 +410,6 @@ contains
 
     call find_time( this % timesInMemory, this % nTimesInMemory, startTime, startIndex)
     call time_real_to_int(this % timesInMemory(startIndex), itime_i)
-    write(*,*) 'Time found : ', itime_i
     this % dataOneTime(:, :, :) = this % dataInMemory(:, :, :, startIndex)
     
     return
@@ -437,7 +438,6 @@ contains
          file = this % fileName, &
          status = 'old', &
          form = 'UNFORMATTED', &
-         access="stream",&
          iostat = iError)
 
     if (iError /= 0) then
@@ -449,8 +449,10 @@ contains
     do iTime = 1, this % ntimes
     
        iFilePos = this % headerLength + this % oneTimeLength * (iTime - 1)
-       read(iUnitAmie_, POS=iFilePos+8) ntemp, iyr, imo, ida, ihr, imi
-       if (AMIE_iDebugLevel > 3) then
+       ! removed +8
+       CALL FSEEK(iUnitAmie_, iFilePos, 0, iError)  ! move to OFFSET
+       read(iUnitAmie_) ntemp, iyr, imo, ida, ihr, imi
+       if (AMIE_iDebugLevel > 2) then
             write(*,*) '====> Reading AMIE time : ', ntemp, iyr, imo, ida, ihr, imi
             write(*,*) '====> At file position: ', iFilePos, '  <===='
        endif
@@ -621,10 +623,9 @@ contains
          !! Or use this to get the index of next record  (breaks when there are multiple times):
          ! INQUIRE(UNIT=iUnitAmie_, NEXTREC=i) !get next record
          
-
     if (AMIE_iDebugLevel > 2) &
-         write(*,*) 'current file position : ', this % headerLength
-
+         write(*,*) 'current file position : ', ftell(iUnitAmie_)
+    
     this % oneTimeLength = &
          6 * 4 + 8 + &
          13 * 4 + 8 + &
@@ -633,7 +634,7 @@ contains
     this % nTimesGoal = nMaxSize / (this % nMlts * this % nLats * nValues)
     if (AMIE_iDebugLevel > 2) &
          write(*,*) "==> AMIE nTimesGoals : ", this % nTimesGoal
-    
+
     close(iUnitAmie_)
     
   end subroutine read_amie_header
@@ -738,11 +739,12 @@ contains
     if (.not. isOk) return
 
     ! Check to see if some of these exist:
-    if (this % iMap_(iPotential_) < 1) then
-      call set_error("Could not find Potential in file!")
+    if (this % iMap_(iPotential_) > 0) then
+       this % hasPotential = .true.
     endif
-    if ((this % iMap_(iEle_diff_eflux_) < 1) .or. (this % iMap_(iEle_diff_avee_) < 0)) then
-      call set_error("Could not find Electron Diffuse in file!")
+    if ((this % iMap_(iEle_diff_eflux_) > 0) .and. (this % iMap_(iEle_diff_avee_) > 0)) then
+       !call set_error("Could not find Electron Diffuse in file!")
+       this % hasDiffuse = .true.
     endif
 
     if ((this % iMap_(iIon_diff_eflux_) > 0) .and. (this % iMap_(iIon_diff_avee_) > 0)) then
@@ -886,11 +888,6 @@ contains
 
     if (AMIE_iDebugLevel > 4) &
        write(*,*) 'file point!', LatIn, MltIn, LocOut
-
-    if (LocOut(1) < 1) then
-       write(*,*) 'didnt file point!', LatIn, MltIn, allFiles(1) % Lats(1:2)
-       stop
-    endif
 
   end subroutine FindPoint
 
