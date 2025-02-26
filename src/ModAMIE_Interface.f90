@@ -281,10 +281,12 @@ contains
        if (endIndex > this % nTimes) endIndex = this % nTimes
        
        if (AMIE_iDebugLevel > 1) &
-            write(*,*) "==> Opening AMIE file to read data : ", trim(this % fileName)
+            write(*,*) "==> Opening AMIE file to read data : ", &
+            trim(this % fileName)
        
        if (allocated(AllDataOneTime)) deallocate(AllDataOneTime)
-       allocate(AllDataOneTime(this % nMlts, this % nLats, this % nVars), stat=iError)
+       allocate(AllDataOneTime(this % nMlts, this % nLats, this % nVars), &
+            stat=iError)
        if (iError /= 0) then
           call set_error("Error trying to allocate AllDataOneTime in AMIE")
        endif
@@ -310,7 +312,8 @@ contains
           CALL FSEEK(iUnitAmie_, iFilePos, 0, iError)  ! move to OFFSET
           read(iUnitAmie_) ntemp, iyr, imo, ida, ihr, imi
           if (AMIE_iDebugLevel > 2) &
-               write(*,*) '====> Reading AMIE time : ', ntemp, iyr, imo, ida, ihr, imi
+               write(*,*) '====> Reading AMIE time : ', &
+               ntemp, iyr, imo, ida, ihr, imi
 
           itime_i(1) = iyr
           itime_i(2) = imo
@@ -323,16 +326,22 @@ contains
           this % nTimesInMemory = this % nTimesInMemory + 1
           this % timesInMemory(this % nTimesInMemory) = rtime
 
-          ! We don't care about these, but read them to move forward in the file:
-          read(iUnitAmie_) swv, bx, by, bz, aei, ae, au, al, dsti, dst, hpi, sjh, pot
+          ! We don't care about these,
+          ! but read them to move forward in the file:
+          read(iUnitAmie_) swv, bx, by, bz, aei, ae, au, al, &
+               dsti, dst, hpi, sjh, pot
 
           do iField = 1, this % nVars
              if (this % ReverseLats) then
                 read(iUnitAmie_) &
-                     ((AllDataOneTime(j, i, iField), j = 1, this % nMlts), i = this % nLats, 1, -1)
+                     ((AllDataOneTime(j, i, iField), &
+                     j = 1, this % nMlts), &
+                     i = this % nLats, 1, -1)
              else
                 read(iUnitAmie_) &
-                     ((AllDataOneTime(j, i, iField), j = 1, this % nMlts), i = 1, this % nLats)
+                     ((AllDataOneTime(j, i, iField), &
+                     j = 1, this % nMlts), &
+                     i = 1, this % nLats)
              endif
           enddo
 
@@ -360,20 +369,25 @@ contains
                    enddo
                 endif
                 
-                ! If the variable is the potential, linearly interpolate it to lower
-                ! latitudes, and then smooth it in mlt:
+                ! If the variable is the potential, linearly
+                ! interpolate it to lower latitudes, and then smooth
+                ! it in mlt:
                 if ((iVal == iPotential_) .or. (iVal == iPotentialY_)) then
                    ! First extend the potential:
                    do i = 1, this % nMlts
-                      dPotential = this % dataInMemory(iVal, i, this % nLats, iT)/nCellsPad
+                      dPotential = &
+                           this % dataInMemory(iVal, i, this % nLats, iT) / &
+                           nCellsPad
                       do j = this % nLats + 1, this % nLats + nCellsPad
                          this % dataInMemory(iVal, i, j, iT) = &
-                              this % dataInMemory(iVal, i, j - 1, iT) - dPotential
+                              this % dataInMemory(iVal, i, j - 1, iT) - &
+                              dPotential
                       enddo
                    enddo
                    ! Then smooth the extension in MLT:
                    do j = this % nLats + 1, this % nLats + nCellsPad
-                      ! We are going to smooth more and more as we go down in latitude
+                      ! We are going to smooth more and more as we go
+                      ! down in latitude
                       do n = 1, j - this % nLats
                          i = 1
                          this % dataInMemory(iVal, i, j, iT) = &
@@ -408,7 +422,11 @@ contains
 
     ! Now let's pull out one time and put it into the single time array:
 
-    call find_time( this % timesInMemory, this % nTimesInMemory, startTime, startIndex)
+    call find_time( &
+         this % timesInMemory, &
+         this % nTimesInMemory, &
+         startTime, &
+         startIndex)
     call time_real_to_int(this % timesInMemory(startIndex), itime_i)
     this % dataOneTime(:, :, :) = this % dataInMemory(:, :, :, startIndex)
     
