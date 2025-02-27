@@ -40,8 +40,8 @@ ${MYLIB}: ${OBJECTS}
 	@echo
 	@echo 'creating LibIE'
 	@echo
+	@rm -f ${MYLIB}
 	${AR} ${MYLIB} ${OBJECTS}
 
 SHARELIB: DEPEND
-	make ${MYLIB}
-	@cp ../lib/libIE.a ${LIBDIR}/libIE.a
+	@make ${MYLIB}
