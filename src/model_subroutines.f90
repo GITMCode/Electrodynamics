@@ -165,7 +165,10 @@
   
   ! ------------------------------------------------------------
   ! run aurora model
-
+  ! Since there can be a lot of different types of aurora, and
+  ! some models offer some things, while other models don't,
+  ! we break the functionality into multiple parts.
+  
   subroutine run_aurora_model(ie, eflux, avee)
     use ModAMIE_Interface, only: &
          get_amie_electron_diffuse_eflux, &
@@ -175,19 +178,31 @@
                     ie%neednLats), intent(out) :: eFlux
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(out) :: AveE
-
+    integer :: iError = 0
+    
     eFlux = 0.001 ! ergs/cm2/s
     AveE = 3.0 ! keV
     
     call ie%check_time()
     call ie%check_indices()
 
-    if (.not. isOk) then ! I think this is worthwhile to have, but masks errors in potential.
-      call set_error("Not ok, exiting run_aurora_model without doing anything.")
-      return
+    ! I think this is worthwhile to have, but masks errors in potential.
+    if (.not. isOk) then 
+       call set_error("Not ok, exiting run_aurora_model without doing anything.")
+       return
     endif
 
-    if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE)
+    if (allocated(ie%havePolarCap)) deallocate(ie%havePolarCap)
+    allocate(ie%havePolarCap(ie%neednMlts, ie%neednLats), stat = iError)
+    if (iError /= 0) then
+       isOk = .false.
+       call set_error("run_aurora_model - failed to allocate havepolarcap.")
+       return
+    endif
+
+    ie%havePolarCap = 0.0
+   
+    if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE, ie%havePolarCap)
     ! These two models are the same, because they use the same
     if (ie%iAurora_ == iFRE_) call ie%hpi_pem(eFlux, AveE)
     if (ie%iAurora_ == iPEM_) call ie%hpi_pem(eFlux, AveE)
@@ -200,16 +215,40 @@
     return
   end subroutine run_aurora_model
 
+  ! ------------------------------------------------------------
+  ! These functions are for getting information that was
+  ! derived when the auroral model was run
+  ! ------------------------------------------------------------
+
+  ! Supply the polar cap to the user:
+  ! polarcap = 1 inside the polar cap, and 0 elsewhere.
+  
+  subroutine get_polarcap_results(ie, polarcap)
+    class(ieModel) :: ie
+    real, dimension(ie%neednMlts, &
+         ie%neednLats), intent(out) :: polarcap
+
+    if (maxval(ie%havePolarCap) == 0) then
+       isOk = .false.
+       call set_error("polar cap is not set, be careful!")
+    endif
+    
+    polarcap = ie%havePolarCap
+
+    return
+  end subroutine get_polarcap_results
 
   ! ------------------------------------------------------------
   ! run FTA Model, providing aveE and E-Flux
-  subroutine run_fta_model(ie, eFlux, AveE)
+  subroutine run_fta_model(ie, eFlux, AveE, polarCap)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(inout) :: eFlux
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(inout) :: AveE
-    real :: eFluxVal, AveEVal
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(inout) :: polarCap
+    real :: eFluxVal, AveEVal, polarCapVal
     integer :: iError = 0, iMlt, iLat
     
     call update_fta_model(ie%needAu, ie%needAl, iError)
@@ -223,9 +262,10 @@
           call get_fta_model_result( &
                ie%needMlts(iMlt, iLat), &
                ie%needLats(iMlt, iLat), &
-               eFluxVal, AveEVal)
+               eFluxVal, AveEVal, polarCapVal)
           eFlux(iMlt, iLat) = eFluxVal
           AveE(iMlt, iLat) = AveEVal
+          polarCap(iMlt, iLat) = polarCapVal
        enddo
     enddo
     return
