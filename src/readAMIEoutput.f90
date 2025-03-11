@@ -10,15 +10,13 @@
 !  1. Read in Variables and figure out which variables to use
 !  2. Read in the grid
 !  When the user sets a time:
-!  3. Check to 
+!  3. Check to
 !  3. Read in times, but discard up to the requested time
 !  4. Read in nTimes
-
 
 ! This should be generalized to allow for sub-grids, but that doesn't
 ! exist at this time.
 ! --------------------------------------------------------------------
-
 
 !! --------------------------------------------------------------------
 !!
@@ -54,7 +52,6 @@
 !  return
 !
 !end subroutine readAMIEsizes
-
 
 ! --------------------------------------------------------------------
 !
@@ -111,15 +108,15 @@ end subroutine readAMIEvariables
 !  implicit none
 !  character(len=*), intent(in) :: AmieFile
 !  logical, intent(in) :: isNorth
-!  
+!
 !  integer :: iUnitTmp_ = 77
 !  integer :: iError = 0, iVar, i
 !  real*4 :: dummy(1000)
 !  integer :: nLats, nMlts, nTimes
-!  
+!
 !  if (AMIE_iDebugLevel > 0) &
 !       write(*,*) "=> Reading times from AMIE file : ", AmieFile
-!  
+!
 !  open(iUnitTmp_, &
 !       file=AmieFile, &
 !       status='old', &
@@ -134,12 +131,12 @@ end subroutine readAMIEvariables
 !     allocate(allTimesSouth(nTimes), stat=iError)
 !     nTimesSouth = nTimes
 !  endif
-!  
+!
 !  if (iError /= 0) then
 !    write(*, *) "Error in allocating array timesOut in readAMIEtimes"
 !    call set_error("Error trying to allocate timesOut in AMIE")
 !  endif
-!  
+!
 !  return
 !end subroutine readAMIEtimes
 
@@ -157,7 +154,7 @@ subroutine readAMIEfileWhole(iBLK, IsMirror, iError)
   integer, intent(in)  :: iBLK
 
   integer :: iUnitTmp_ = 77
-  
+
   integer :: iTime, nTimesBig, nTimesTotal
   integer :: nfields
   integer :: ntemp, iyr, imo, ida, ihr, imi
@@ -186,11 +183,9 @@ subroutine readAMIEfileWhole(iBLK, IsMirror, iError)
   nTimesBig = 0
   nTimesTotal = 0
 
-
-  
   iError = 0
   if (AMIE_iDebugLevel >= 0) &
-       write(*, *) '> reading AMIE file : ', trim(AMIE_FileName)
+    write(*, *) '> reading AMIE file : ', trim(AMIE_FileName)
   open(iUnitTmp_, &
        file=AMIE_FileName, &
        status='old', &
@@ -213,7 +208,7 @@ subroutine readAMIEfileWhole(iBLK, IsMirror, iError)
   if (IsBinary) then
     call AMIE_link_variable_names()
     call readAMIEvariables(AMIE_FileName, nFields, Fields, AMIE_iDebugLevel)
-    ! OLD: 
+    ! OLD:
     ! call AMIE_link_vars_to_keys(nFields, Fields)
 
     open(iUnitTmp_, file=AMIE_FileName, status='old', form='UNFORMATTED')
@@ -310,15 +305,15 @@ subroutine readAMIEfileWhole(iBLK, IsMirror, iError)
     endif
   enddo
 
-!  ! Need to convert from W/m^2 to erg/cm2/s
-!  factor = 1.0
-!  if (energyfluxconvert) then
-!    factor = 1.0/(1.0e-7*100.0*100.0)
-!    unitConvert(iEle_diff_eflux_) = factor
-!    unitConvert(iIon_diff_eflux_) = factor
-!    unitConvert(iEle_mono_eflux_) = factor
-!    unitConvert(iEle_wave_eflux_) = factor
-!  endif
+  !  ! Need to convert from W/m^2 to erg/cm2/s
+  !  factor = 1.0
+  !  if (energyfluxconvert) then
+  !    factor = 1.0/(1.0e-7*100.0*100.0)
+  !    unitConvert(iEle_diff_eflux_) = factor
+  !    unitConvert(iIon_diff_eflux_) = factor
+  !    unitConvert(iEle_mono_eflux_) = factor
+  !    unitConvert(iEle_wave_eflux_) = factor
+  !  endif
 
   if (AMIE_iDebugLevel > 1) write(*, *) 'Reading AMIE data now...'
 

@@ -2,21 +2,21 @@
 Module ModMain
 
   use ModKind
-  
-  character (len=100) :: outputDir = 'IE/output'
-  character (len=100) :: filename = 'test.bin'
+
+  character(len=100) :: outputDir = 'IE/output'
+  character(len=100) :: filename = 'test.bin'
   integer :: LunMainOutput = 60
   logical :: isInitialized = .false.
 
   integer :: nTimes = 12, iT
-  real (kind = Real8_) :: currentTime = -1.0
-  real (kind = Real8_) :: startTime = -1.0
-  real (kind = Real8_) :: endTime = -1.0
+  real(kind=Real8_) :: currentTime = -1.0
+  real(kind=Real8_) :: startTime = -1.0
+  real(kind=Real8_) :: endTime = -1.0
 
   real :: imfBx, imfBy, imfBz
   real :: ae, au, al, hp
   real :: swV, swN
-  
+
   integer :: nLons = 25
   integer :: nLats = 30
   real :: minLat = 60.0
@@ -27,7 +27,7 @@ Module ModMain
 
   real, allocatable :: geoLats(:, :)
   real, allocatable :: geoLons(:, :)
-  
+
   real, allocatable :: gseX(:, :)
   real, allocatable :: gseY(:, :)
   real, allocatable :: gseZ(:, :)
@@ -42,7 +42,7 @@ Module ModMain
   real, allocatable :: eWaveAvee(:, :)
   real, allocatable :: eWaveEflux(:, :)
   real, allocatable :: polarCap(:, :)
-  
+
 contains
 
   ! ----------------------------------------------------------------
@@ -68,12 +68,12 @@ contains
     allocate(polarcap(nLons, nLats))
 
     if (isGeographic) then
-       allocate(geoLats(nLons, nLats))
-       allocate(geoLons(nLons, nLats))
-       allocate(magLons(nLons, nLats))
-       allocate(gseX(nLons, nLats))
-       allocate(gseY(nLons, nLats))
-       allocate(gseZ(nLons, nLats))
+      allocate(geoLats(nLons, nLats))
+      allocate(geoLons(nLons, nLats))
+      allocate(magLons(nLons, nLats))
+      allocate(gseX(nLons, nLats))
+      allocate(gseY(nLons, nLats))
+      allocate(gseZ(nLons, nLats))
     endif
 
   end subroutine allocate_all_variables
@@ -101,14 +101,14 @@ contains
     deallocate(polarcap)
 
     if (isGeographic) then
-       deallocate(geoLats)
-       deallocate(geoLons)
-       deallocate(magLons)
-       deallocate(gseX)
-       deallocate(gseY)
-       deallocate(gseZ)
+      deallocate(geoLats)
+      deallocate(geoLons)
+      deallocate(magLons)
+      deallocate(gseX)
+      deallocate(gseY)
+      deallocate(gseZ)
     endif
 
   end subroutine deallocate_all_variables
-  
+
 end Module ModMain

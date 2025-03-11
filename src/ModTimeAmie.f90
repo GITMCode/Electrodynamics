@@ -4,13 +4,13 @@
 module ModTimeAmie
 
 contains
-  
+
   ! ----------------------------------------------------------------------
   ! Find day of year based on year, month, and day of month
   ! ----------------------------------------------------------------------
 
   integer function jday(year, mon, day) result(Julian_Day)
-    
+
     implicit none
 
     integer :: i
@@ -33,7 +33,7 @@ contains
     if (mod(year, 4) .eq. 0) dayofmon(2) = dayofmon(2) + 1
     Julian_Day = 0
     do i = 1, mon - 1
-       Julian_Day = Julian_Day + dayofmon(i)
+      Julian_Day = Julian_Day + dayofmon(i)
     enddo
     Julian_Day = Julian_Day + day
 
@@ -44,7 +44,7 @@ contains
     use ModKind
 
     implicit none
-    
+
     integer, dimension(12) :: dayofmon
     integer, dimension(7), intent(in) :: itime
     real(Real8_), intent(out) :: timereal
@@ -62,18 +62,18 @@ contains
     dayofmon(10) = 31
     dayofmon(11) = 30
     dayofmon(12) = 31
-    
+
     if (mod(itime(1), 4) .eq. 0) dayofmon(2) = 29
 
     timereal = 0.0; 
     if (itime(1) > 1900) then
-       nyear = itime(1) - 1965
+      nyear = itime(1) - 1965
     else
-       if (itime(1) > 65) then
-          nyear = itime(1) - 65
-       else
-          nyear = itime(1) + 100 - 65
-       endif
+      if (itime(1) > 65) then
+        nyear = itime(1) - 65
+      else
+        nyear = itime(1) + 100 - 65
+      endif
     endif
     nleap = nyear/4
 
@@ -82,7 +82,7 @@ contains
     nday = 0
 
     do i = 1, nmonth
-       nday = nday + dayofmon(i)
+      nday = nday + dayofmon(i)
     enddo
 
     nday = nday + itime(3) - 1
@@ -91,13 +91,13 @@ contains
     nsec = itime(6)
 
     timereal = &
-         (dble(nsec)*dble(1.0)) + &
-         (dble(nmin)*dble(60.0)) + &
-         (dble(nhour)*dble(60.0*60.0)) + &
-         (dble(nday)*dble(24.0*60.0*60.0)) + &
-         (dble(nleap)*dble(24.0*60.0*60.0)) + &
-         (dble(nyear)*dble(365.0*24.0*60.0*60.0)) + &
-         itime(7)/1000.0
+      (dble(nsec)*dble(1.0)) + &
+      (dble(nmin)*dble(60.0)) + &
+      (dble(nhour)*dble(60.0*60.0)) + &
+      (dble(nday)*dble(24.0*60.0*60.0)) + &
+      (dble(nleap)*dble(24.0*60.0*60.0)) + &
+      (dble(nyear)*dble(365.0*24.0*60.0*60.0)) + &
+      itime(7)/1000.0
 
   end subroutine time_int_to_real
 
@@ -133,14 +133,14 @@ contains
     nday = int((timereal - (dble(nyear)*speryear))/sperday)
 
     if (nday .le. nleap) then
-       nyear = int((timereal - (dble(nleap)*sperday))/speryear)
-       nleap = nyear/4
-       nday = int((timereal - (dble(nyear)*speryear))/sperday)
-       if (nday .le. nleap) then
-          nyear = int((timereal - (dble(nleap)*sperday))/speryear)
-          nleap = nyear/4
-          nday = int((timereal - (dble(nyear)*speryear))/sperday)
-       endif
+      nyear = int((timereal - (dble(nleap)*sperday))/speryear)
+      nleap = nyear/4
+      nday = int((timereal - (dble(nyear)*speryear))/sperday)
+      if (nday .le. nleap) then
+        nyear = int((timereal - (dble(nleap)*sperday))/speryear)
+        nleap = nyear/4
+        nday = int((timereal - (dble(nyear)*speryear))/sperday)
+      endif
     endif
 
     if (mod((nyear + 65), 4) .eq. 0) dayofmon(2) = dayofmon(2) + 1
@@ -160,8 +160,8 @@ contains
 
     nmonth = 1; 
     do while (nday .ge. dayofmon(nmonth))
-       nday = nday - dayofmon(nmonth)
-       nmonth = nmonth + 1
+      nday = nday - dayofmon(nmonth)
+      nmonth = nmonth + 1
     enddo
 
     itime(1) = nyear + 1965

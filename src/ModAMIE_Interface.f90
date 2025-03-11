@@ -36,8 +36,8 @@ Module ModAMIE_Interface
   ! This is the maximum size of the memory we want to take, so we
   ! don't run out of memory (this is equivalent to a course grid at
   ! 1 minute resolution with only 3 variables):
-  integer :: nMaxSize = 25 * 20 * 3 * 1440
-  
+  integer :: nMaxSize = 25*20*3*1440
+
   ! The names of the variables are defined in this array, and initialized
   ! in the function below
   character(len=iCharLenIE_) :: AMIE_Names(nValues)
@@ -48,62 +48,62 @@ Module ModAMIE_Interface
 
   type, public :: amieFile
 
-     logical :: isOk = .true.
-     character (len = iCharLenIE_) :: fileName = "none"
-     
-     ! ----------------------------------------------------------------
-     ! ----------------------------------------------------------------
-     integer :: nLats = 0
-     integer :: nMLTs = 0
-     integer :: nVars = 0
-     integer :: nTimes = 0
-     integer :: nTimesGoal = 0
-     integer :: nVarsInMemory = 0
-     
-     real (kind = Real8_), allocatable, dimension(:) :: times
-     real*4, allocatable, dimension(:) :: lats, mlts
-     character(len=30), dimension(nVarsMax) :: varNames = ''
+    logical :: isOk = .true.
+    character(len=iCharLenIE_) :: fileName = "none"
 
-     logical :: ReverseLats = .false.
-     logical :: IsMirror = .false.
-     logical :: IsNorth = .true.
-     
-     integer :: headerLength = 0
-     integer :: oneTimeLength = 0
+    ! ----------------------------------------------------------------
+    ! ----------------------------------------------------------------
+    integer :: nLats = 0
+    integer :: nMLTs = 0
+    integer :: nVars = 0
+    integer :: nTimes = 0
+    integer :: nTimesGoal = 0
+    integer :: nVarsInMemory = 0
 
-     ! Figure out which variables are in the file
-     logical :: hasPotential = .false.
-     logical :: hasDiffuse = .false.
-     logical :: hasIons = .false.
-     logical :: hasMono = .false.
-     logical :: hasWave = .false.
-     integer, dimension(nValues) :: iMap_ = -1
-     real, dimension(nValues) :: unitConvert = 1.0
+    real(kind=Real8_), allocatable, dimension(:) :: times
+    real*4, allocatable, dimension(:) :: lats, mlts
+    character(len=30), dimension(nVarsMax) :: varNames = ''
 
-     integer :: nTimesInMemory = 0
-     real (kind = Real8_), allocatable, dimension(:) :: timesInMemory
+    logical :: ReverseLats = .false.
+    logical :: IsMirror = .false.
+    logical :: IsNorth = .true.
 
-     ! mlts, lats, (subsample of) times, and variables
-     real*4, allocatable, dimension(:, :, :, :) :: dataInMemory
+    integer :: headerLength = 0
+    integer :: oneTimeLength = 0
 
-     ! mlts, lats, and variables at one single time
-     real, allocatable, dimension(:, :, :) :: dataOneTime
+    ! Figure out which variables are in the file
+    logical :: hasPotential = .false.
+    logical :: hasDiffuse = .false.
+    logical :: hasIons = .false.
+    logical :: hasMono = .false.
+    logical :: hasWave = .false.
+    integer, dimension(nValues) :: iMap_ = -1
+    real, dimension(nValues) :: unitConvert = 1.0
 
-   contains
+    integer :: nTimesInMemory = 0
+    real(kind=Real8_), allocatable, dimension(:) :: timesInMemory
 
-     ! Initialize the library:
-     procedure :: init => initialize
-     
+    ! mlts, lats, (subsample of) times, and variables
+    real*4, allocatable, dimension(:, :, :, :) :: dataInMemory
+
+    ! mlts, lats, and variables at one single time
+    real, allocatable, dimension(:, :, :) :: dataOneTime
+
+  contains
+
+    ! Initialize the library:
+    procedure :: init => initialize
+
   end type amieFile
 
   type(amieFile), allocatable, dimension(:) :: allFiles
 
   integer :: nCellsPad
-  
+
   integer :: nMltsNeeded, nLatsNeeded
-  integer, allocatable, dimension(:,:,:) :: interpolationIndices
-  real, allocatable, dimension(:,:,:) :: interpolationRatios
-  
+  integer, allocatable, dimension(:, :, :) :: interpolationIndices
+  real, allocatable, dimension(:, :, :) :: interpolationRatios
+
   real :: rDummyeFlux = 1.0e-6 ! in W/m2
   real :: rDummyAveE = 2.0 ! in keV
   real :: rDummyIonAveE = 20.0 ! in keV
@@ -115,79 +115,78 @@ Module ModAMIE_Interface
   ! mlts, lats, blocks, times, and variable
   real*4, allocatable, dimension(:, :, :, :, :) :: AMIE_Storage
 
-  
 contains
 
   ! --------------------------------------------------------------------
   ! Initialize file
   ! --------------------------------------------------------------------
-  
+
   subroutine initialize(this, fileIn, isNorthIn, isMirrorIn)
 
     implicit none
-    
+
     class(amieFile) :: this
-    character (len = *), intent(in) :: fileIn
+    character(len=*), intent(in) :: fileIn
     logical, intent(in) :: isNorthIn
     logical, intent(in) :: isMirrorIn
     integer :: iError = 0, iVar, i
 
-    this % fileName = fileIn
-    this % isNorth = isNorthIn
-    this % isMirror = isMirrorIn
+    this%fileName = fileIn
+    this%isNorth = isNorthIn
+    this%isMirror = isMirrorIn
 
     if (AMIE_iDebugLevel > -1) &
-         write(*,*) "> Initializing AMIE file system with file : ", trim(fileIn)
-    
+      write(*, *) "> Initializing AMIE file system with file : ", trim(fileIn)
+
     call read_amie_header(this)
     call read_amie_times(this)
 
-    allocate(this % timesInMemory(this % nTimesGoal), stat = iError)
+    allocate(this%timesInMemory(this%nTimesGoal), stat=iError)
     if (iError /= 0) then
-       call set_error("Error trying to allocate timesInMemory in initialize")
-       return
+      call set_error("Error trying to allocate timesInMemory in initialize")
+      return
     endif
-    
-    allocate(this % dataInMemory( &
-         nValues, &
-         this % nMlts, &
-         this % nLats + nCellsPad, &
-         this % nTimesGoal), &
-         stat = iError)
+
+    allocate(this%dataInMemory( &
+             nValues, &
+             this%nMlts, &
+             this%nLats + nCellsPad, &
+             this%nTimesGoal), &
+             stat=iError)
     this%dataInMemory = 0.0
     if (iError /= 0) then
-       call set_error("Error trying to allocate dataInMemory in initialize")
-       return
+      call set_error("Error trying to allocate dataInMemory in initialize")
+      return
     endif
-    
-    allocate(this % dataOneTime( &
-         nValues, &
-         this % nMlts, &
-         this % nLats + nCellsPad), &
-         stat = iError)
+
+    allocate(this%dataOneTime( &
+             nValues, &
+             this%nMlts, &
+             this%nLats + nCellsPad), &
+             stat=iError)
     if (iError /= 0) then
-       call set_error("Error trying to allocate dataOneTime in initialize")
-       return
+      call set_error("Error trying to allocate dataOneTime in initialize")
+      return
     endif
-    
+
   end subroutine initialize
 
   ! --------------------------------------------------------------------
   ! Update the AMIE files so that it contains the data for the present
   ! time
   ! --------------------------------------------------------------------
-  
+
   subroutine update_amie_files(timeIn)
 
     implicit none
-    
-    real (kind = Real8_), intent(in) :: timeIn
+
+    real(kind=Real8_), intent(in) :: timeIn
 
     call read_amie_data(allFiles(1), timeIn)
     call read_amie_data(allFiles(2), timeIn)
 
   end subroutine update_amie_files
-  
+
   ! --------------------------------------------------------------------
   ! This finds the index of time in the list of times that is before
   ! or equal to the input time
@@ -197,298 +196,298 @@ contains
 
     implicit none
     integer, intent(in) :: nTimes
-    real (kind = Real8_), intent(in) :: timeList(nTimes)
-    real (kind = Real8_), intent(in) :: timeIn
+    real(kind=Real8_), intent(in) :: timeList(nTimes)
+    real(kind=Real8_), intent(in) :: timeIn
     integer, intent(out) :: indexOut
     integer :: iMin, iMax, iMid
     logical :: isFound
-    
+
     iMin = 1
     iMax = nTimes
     isFound = .false.
 
     do while (.not. isFound)
 
-       iMid = (iMax + iMin)/2
-       if (iMid == iMin .or. iMid == iMax) then
+      iMid = (iMax + iMin)/2
+      if (iMid == iMin .or. iMid == iMax) then
+        isFound = .true.
+      else
+        if (timeList(iMid) == timeIn) then
           isFound = .true.
-       else
-          if (timeList(iMid) == timeIn) then
-             isFound = .true.
+        else
+          if (timeList(iMid) > timeIn) then
+            iMax = iMid
           else
-             if (timeList(iMid) > timeIn) then
-                iMax = iMid
-             else
-                iMin = iMid
-             endif
+            iMin = iMid
           endif
-       endif
+        endif
+      endif
     enddo
 
     if (timeList(iMid) == timeIn) then
-       indexOut = iMid
+      indexOut = iMid
     else
-       indexOut = iMin
+      indexOut = iMin
     endif
-    
+
   end subroutine find_time
-  
+
   ! --------------------------------------------------------------------
   ! This function loads the array dataInMemory, which is most likely
-  ! a subset of the 
+  ! a subset of the
   ! --------------------------------------------------------------------
-  
+
   subroutine read_amie_data(this, startTime)
 
     implicit none
-    
+
     class(amieFile) :: this
-    real (kind = Real8_), intent(in) :: startTime
-    
+    real(kind=Real8_), intent(in) :: startTime
+
     integer :: iError = 0
     integer :: ntemp, iyr, imo, ida, ihr, imi, iTime
     integer :: iFilePos
     integer :: startIndex, endIndex
     integer, dimension(7) :: itime_i
     logical :: doReadMore
-    
+
     real*4, allocatable, dimension(:, :, :) :: AllDataOneTime
-    real (kind = Real8_) :: rtime
+    real(kind=Real8_) :: rtime
     real*4  :: swv, bx, by, bz, aei, ae, au, al, dsti, dst, hpi, sjh, pot
     real :: dPotential
 
     integer :: i, j, iField, n, iVal, iT
 
     doReadMore = .false.
-    
-    if (this % nTimesInMemory == 0) then
-       doReadMore = .true.
+
+    if (this%nTimesInMemory == 0) then
+      doReadMore = .true.
     else
-       if ( startTime < this % timesInMemory(1) .or. &
-            startTime >= this % timesInMemory(this % nTimesInMemory)) then
-          doReadMore = .true.
-       endif
+      if (startTime < this%timesInMemory(1) .or. &
+          startTime >= this%timesInMemory(this%nTimesInMemory)) then
+        doReadMore = .true.
+      endif
     endif
 
     if (doReadMore) then
 
-       if (AMIE_iDebugLevel > 1) &
-            write(*,*) "==> Need to read more AMIE data!"
-       
-       call find_time(this % times, this % nTimes, startTime, startIndex)
-       endIndex = startIndex + this % nTimesGoal - 1
+      if (AMIE_iDebugLevel > 1) &
+        write(*, *) "==> Need to read more AMIE data!"
 
-       if (endIndex > this % nTimes) endIndex = this % nTimes
-       
-       if (AMIE_iDebugLevel > 1) &
-            write(*,*) "==> Opening AMIE file to read data : ", &
-            trim(this % fileName)
-       
-       if (allocated(AllDataOneTime)) deallocate(AllDataOneTime)
-       allocate(AllDataOneTime(this % nMlts, this % nLats, this % nVars), &
-            stat=iError)
-       if (iError /= 0) then
-          call set_error("Error trying to allocate AllDataOneTime in AMIE")
-       endif
-           
-       open(iUnitAmie_, &
-            file = this % fileName, &
-            status = 'old', &
-            form = 'UNFORMATTED', &
-            iostat = iError)
+      call find_time(this%times, this%nTimes, startTime, startIndex)
+      endIndex = startIndex + this%nTimesGoal - 1
 
-       if (iError /= 0) then
-          call set_error("Error trying to open file in read_amie_data: ")
-          call set_error(this % fileName)
-          return
-       endif
+      if (endIndex > this%nTimes) endIndex = this%nTimes
 
-       ! Move to the correct time:
-       this % nTimesInMemory = 0
-       do iTime = startIndex, endIndex
-          iT = iTime - startIndex + 1          
-          iFilePos = this % headerLength + this % oneTimeLength * (iTime - 1)
-          ! removed +8 in line below this!
-          CALL FSEEK(iUnitAmie_, iFilePos, 0, iError)  ! move to OFFSET
-          read(iUnitAmie_) ntemp, iyr, imo, ida, ihr, imi
-          if (AMIE_iDebugLevel > 2) &
-               write(*,*) '====> Reading AMIE time : ', &
-               ntemp, iyr, imo, ida, ihr, imi
+      if (AMIE_iDebugLevel > 1) &
+        write(*, *) "==> Opening AMIE file to read data : ", &
+        trim(this%fileName)
 
-          itime_i(1) = iyr
-          itime_i(2) = imo
-          itime_i(3) = ida
-          itime_i(4) = ihr
-          itime_i(5) = imi
-          itime_i(6) = 0
-          itime_i(7) = 0
-          call time_int_to_real(itime_i, rtime)
-          this % nTimesInMemory = this % nTimesInMemory + 1
-          this % timesInMemory(this % nTimesInMemory) = rtime
+      if (allocated(AllDataOneTime)) deallocate(AllDataOneTime)
+      allocate(AllDataOneTime(this%nMlts, this%nLats, this%nVars), &
+               stat=iError)
+      if (iError /= 0) then
+        call set_error("Error trying to allocate AllDataOneTime in AMIE")
+      endif
 
-          ! We don't care about these,
-          ! but read them to move forward in the file:
-          read(iUnitAmie_) swv, bx, by, bz, aei, ae, au, al, &
-               dsti, dst, hpi, sjh, pot
+      open(iUnitAmie_, &
+           file=this%fileName, &
+           status='old', &
+           form='UNFORMATTED', &
+           iostat=iError)
 
-          do iField = 1, this % nVars
-             if (this % ReverseLats) then
-                read(iUnitAmie_) &
-                     ((AllDataOneTime(j, i, iField), &
-                     j = 1, this % nMlts), &
-                     i = this % nLats, 1, -1)
-             else
-                read(iUnitAmie_) &
-                     ((AllDataOneTime(j, i, iField), &
-                     j = 1, this % nMlts), &
-                     i = 1, this % nLats)
-             endif
-          enddo
+      if (iError /= 0) then
+        call set_error("Error trying to open file in read_amie_data: ")
+        call set_error(this%fileName)
+        return
+      endif
 
-          ! We need Potential to be in Volts
-          !         AveE to be in keV
-          !         EFlux to be in W/m2
+      ! Move to the correct time:
+      this%nTimesInMemory = 0
+      do iTime = startIndex, endIndex
+        iT = iTime - startIndex + 1
+        iFilePos = this%headerLength + this%oneTimeLength*(iTime - 1)
+        ! removed +8 in line below this!
+        CALL FSEEK(iUnitAmie_, iFilePos, 0, iError)  ! move to OFFSET
+        read(iUnitAmie_) ntemp, iyr, imo, ida, ihr, imi
+        if (AMIE_iDebugLevel > 2) &
+          write(*, *) '====> Reading AMIE time : ', &
+          ntemp, iyr, imo, ida, ihr, imi
 
-          if (AMIE_iDebugLevel > 1) write(*, *) '  --> Pushing in to storage '
-          do iVal = 1, nValues
-             if (this % iMap_(iVal) > 0) then
-                ! if we are mirroring, we need to do something special
-                !  but only if we are talking about the potential:
-                if ((this % IsMirror) .and. &
-                     ((iVal == iPotential_) .or. (iVal == iPotentialY_))) then
-                   do i = 1, this % nMlts
-                      this % dataInMemory(iVal, i, 1:this % nLats, iT) = &
-                           -AllDataOneTime(this % nMlts + 1 - i, 1 : this%nLats, this % iMap_(iVal))
-                   enddo
-                else
-                   ! This is the default :
-                   !    (need loop for optimization issues in gfortran...)
-                   do i = 1, this % nMlts
-                      this % dataInMemory(iVal, i, 1:this % nLats, iT) = &
-                           AllDataOneTime(i, 1:this % nLats, this % iMap_(iVal))
-                   enddo
-                endif
-                
-                ! If the variable is the potential, linearly
-                ! interpolate it to lower latitudes, and then smooth
-                ! it in mlt:
-                if ((iVal == iPotential_) .or. (iVal == iPotentialY_)) then
-                   ! First extend the potential:
-                   do i = 1, this % nMlts
-                      dPotential = &
-                           this % dataInMemory(iVal, i, this % nLats, iT) / &
-                           nCellsPad
-                      do j = this % nLats + 1, this % nLats + nCellsPad
-                         this % dataInMemory(iVal, i, j, iT) = &
-                              this % dataInMemory(iVal, i, j - 1, iT) - &
-                              dPotential
-                      enddo
-                   enddo
-                   ! Then smooth the extension in MLT:
-                   do j = this % nLats + 1, this % nLats + nCellsPad
-                      ! We are going to smooth more and more as we go
-                      ! down in latitude
-                      do n = 1, j - this % nLats
-                         i = 1
-                         this % dataInMemory(iVal, i, j, iT) = &
-                              (this % dataInMemory(iVal, this % nMlts - 1, j, iT) + &
-                              2*this % dataInMemory(iVal, i, j, iT) + &
-                              this % dataInMemory(iVal, i + 1, j, iT))/4.0
-                         
-                         do i = 2, this % nMlts - 1
-                            this % dataInMemory(iVal, i, j, iT) = &
-                                 (this % dataInMemory(iVal, i - 1, j, iT) + &
-                                 2*this % dataInMemory(iVal, i, j, iT) + &
-                                 this % dataInMemory(iVal, i + 1, j, iT))/4.0
-                         enddo
+        itime_i(1) = iyr
+        itime_i(2) = imo
+        itime_i(3) = ida
+        itime_i(4) = ihr
+        itime_i(5) = imi
+        itime_i(6) = 0
+        itime_i(7) = 0
+        call time_int_to_real(itime_i, rtime)
+        this%nTimesInMemory = this%nTimesInMemory + 1
+        this%timesInMemory(this%nTimesInMemory) = rtime
 
-                         i = this % nMlts
-                         this % dataInMemory(iVal, i, j, iT) = &
-                              (this % dataInMemory(iVal, i - 1, j, iT) + &
-                              2*this % dataInMemory(iVal, i, j, iT) + &
-                              this % dataInMemory(iVal, 2, j, iT))/4.0
+        ! We don't care about these,
+        ! but read them to move forward in the file:
+        read(iUnitAmie_) swv, bx, by, bz, aei, ae, au, al, &
+          dsti, dst, hpi, sjh, pot
 
-                      enddo
-                   enddo
-                endif
-             endif
-          enddo
+        do iField = 1, this%nVars
+          if (this%ReverseLats) then
+            read(iUnitAmie_) &
+              ((AllDataOneTime(j, i, iField), &
+                j=1, this%nMlts), &
+               i=this%nLats, 1, -1)
+          else
+            read(iUnitAmie_) &
+              ((AllDataOneTime(j, i, iField), &
+                j=1, this%nMlts), &
+               i=1, this%nLats)
+          endif
+        enddo
 
-       enddo
-          
-       close(iUnitAmie_)
-       deallocate(AllDataOneTime)
+        ! We need Potential to be in Volts
+        !         AveE to be in keV
+        !         EFlux to be in W/m2
+
+        if (AMIE_iDebugLevel > 1) write(*, *) '  --> Pushing in to storage '
+        do iVal = 1, nValues
+          if (this%iMap_(iVal) > 0) then
+            ! if we are mirroring, we need to do something special
+            !  but only if we are talking about the potential:
+            if ((this%IsMirror) .and. &
+                ((iVal == iPotential_) .or. (iVal == iPotentialY_))) then
+              do i = 1, this%nMlts
+                this%dataInMemory(iVal, i, 1:this%nLats, iT) = &
+                  -AllDataOneTime(this%nMlts + 1 - i, 1:this%nLats, this%iMap_(iVal))
+              enddo
+            else
+              ! This is the default :
+              !    (need loop for optimization issues in gfortran...)
+              do i = 1, this%nMlts
+                this%dataInMemory(iVal, i, 1:this%nLats, iT) = &
+                  AllDataOneTime(i, 1:this%nLats, this%iMap_(iVal))
+              enddo
+            endif
+
+            ! If the variable is the potential, linearly
+            ! interpolate it to lower latitudes, and then smooth
+            ! it in mlt:
+            if ((iVal == iPotential_) .or. (iVal == iPotentialY_)) then
+              ! First extend the potential:
+              do i = 1, this%nMlts
+                dPotential = &
+                  this%dataInMemory(iVal, i, this%nLats, iT)/ &
+                  nCellsPad
+                do j = this%nLats + 1, this%nLats + nCellsPad
+                  this%dataInMemory(iVal, i, j, iT) = &
+                    this%dataInMemory(iVal, i, j - 1, iT) - &
+                    dPotential
+                enddo
+              enddo
+              ! Then smooth the extension in MLT:
+              do j = this%nLats + 1, this%nLats + nCellsPad
+                ! We are going to smooth more and more as we go
+                ! down in latitude
+                do n = 1, j - this%nLats
+                  i = 1
+                  this%dataInMemory(iVal, i, j, iT) = &
+                    (this%dataInMemory(iVal, this%nMlts - 1, j, iT) + &
+                     2*this%dataInMemory(iVal, i, j, iT) + &
+                     this%dataInMemory(iVal, i + 1, j, iT))/4.0
+
+                  do i = 2, this%nMlts - 1
+                    this%dataInMemory(iVal, i, j, iT) = &
+                      (this%dataInMemory(iVal, i - 1, j, iT) + &
+                       2*this%dataInMemory(iVal, i, j, iT) + &
+                       this%dataInMemory(iVal, i + 1, j, iT))/4.0
+                  enddo
+
+                  i = this%nMlts
+                  this%dataInMemory(iVal, i, j, iT) = &
+                    (this%dataInMemory(iVal, i - 1, j, iT) + &
+                     2*this%dataInMemory(iVal, i, j, iT) + &
+                     this%dataInMemory(iVal, 2, j, iT))/4.0
+
+                enddo
+              enddo
+            endif
+          endif
+        enddo
+
+      enddo
+
+      close(iUnitAmie_)
+      deallocate(AllDataOneTime)
     endif
 
     ! Now let's pull out one time and put it into the single time array:
 
     call find_time( &
-         this % timesInMemory, &
-         this % nTimesInMemory, &
-         startTime, &
-         startIndex)
-    call time_real_to_int(this % timesInMemory(startIndex), itime_i)
-    this % dataOneTime(:, :, :) = this % dataInMemory(:, :, :, startIndex)
-    
+      this%timesInMemory, &
+      this%nTimesInMemory, &
+      startTime, &
+      startIndex)
+    call time_real_to_int(this%timesInMemory(startIndex), itime_i)
+    this%dataOneTime(:, :, :) = this%dataInMemory(:, :, :, startIndex)
+
     return
 
   end subroutine read_amie_data
-  
+
   ! --------------------------------------------------------------------
   ! Read all of the times in the AMIE file
   ! --------------------------------------------------------------------
-  
+
   subroutine read_amie_times(this)
 
     implicit none
-    
+
     class(amieFile) :: this
     integer :: iError = 0
     integer :: ntemp, iyr, imo, ida, ihr, imi, iTime
     integer :: iFilePos
     integer, dimension(7) :: itime_i
-    real (kind = Real8_) :: rtime
+    real(kind=Real8_) :: rtime
 
     if (AMIE_iDebugLevel > 1) &
-         write(*,*) "==> Opening AMIE file to read times : ", trim(this % fileName)
-    
+      write(*, *) "==> Opening AMIE file to read times : ", trim(this%fileName)
+
     open(iUnitAmie_, &
-         file = this % fileName, &
-         status = 'old', &
-         form = 'UNFORMATTED', &
-         iostat = iError)
+         file=this%fileName, &
+         status='old', &
+         form='UNFORMATTED', &
+         iostat=iError)
 
     if (iError /= 0) then
-       call set_error("Error trying to open file in read_amie_times: ")
-       call set_error(this % fileName)
-       return
+      call set_error("Error trying to open file in read_amie_times: ")
+      call set_error(this%fileName)
+      return
     endif
 
-    do iTime = 1, this % ntimes
-    
-       iFilePos = this % headerLength + this % oneTimeLength * (iTime - 1)
-       ! removed +8
-       CALL FSEEK(iUnitAmie_, iFilePos, 0, iError)  ! move to OFFSET
-       read(iUnitAmie_) ntemp, iyr, imo, ida, ihr, imi
-       if (AMIE_iDebugLevel > 2) then
-            write(*,*) '====> Reading AMIE time : ', ntemp, iyr, imo, ida, ihr, imi
-            write(*,*) '====> At file position: ', iFilePos, '  <===='
-       endif
-    
-       itime_i(1) = iyr
-       itime_i(2) = imo
-       itime_i(3) = ida
-       itime_i(4) = ihr
-       itime_i(5) = imi
-       itime_i(6) = 0
-       itime_i(7) = 0
-       call time_int_to_real(itime_i, rtime)
-       this % times(iTime) = rtime
+    do iTime = 1, this%ntimes
+
+      iFilePos = this%headerLength + this%oneTimeLength*(iTime - 1)
+      ! removed +8
+      CALL FSEEK(iUnitAmie_, iFilePos, 0, iError)  ! move to OFFSET
+      read(iUnitAmie_) ntemp, iyr, imo, ida, ihr, imi
+      if (AMIE_iDebugLevel > 2) then
+        write(*, *) '====> Reading AMIE time : ', ntemp, iyr, imo, ida, ihr, imi
+        write(*, *) '====> At file position: ', iFilePos, '  <===='
+      endif
+
+      itime_i(1) = iyr
+      itime_i(2) = imo
+      itime_i(3) = ida
+      itime_i(4) = ihr
+      itime_i(5) = imi
+      itime_i(6) = 0
+      itime_i(7) = 0
+      call time_int_to_real(itime_i, rtime)
+      this%times(iTime) = rtime
 
     enddo
 
     close(iUnitAmie_)
-    
+
     return
 
   end subroutine read_amie_times
@@ -496,80 +495,80 @@ contains
   ! --------------------------------------------------------------------
   ! Read AMIE header and allocate some variables:
   ! --------------------------------------------------------------------
-  
+
   subroutine read_amie_header(this)
 
     implicit none
-    
+
     class(amieFile) :: this
     integer :: iError = 0, iVar, i
     real*4, allocatable, dimension(:) :: TempLats
 
     if (AMIE_iDebugLevel > 1) &
-         write(*,*) "==> Opening AMIE file to read header : ", trim(this % fileName)
-    
+      write(*, *) "==> Opening AMIE file to read header : ", trim(this%fileName)
+
     open(iUnitAmie_, &
-         file = this % fileName, &
-         status = 'old', &
-         form = 'UNFORMATTED', &
-         iostat = iError)
+         file=this%fileName, &
+         status='old', &
+         form='UNFORMATTED', &
+         iostat=iError)
 
     if (iError /= 0) then
-       call set_error("Error trying to open file in read_amie_header: ")
-       call set_error(this % fileName)
-       return
+      call set_error("Error trying to open file in read_amie_header: ")
+      call set_error(this%fileName)
+      return
     endif
 
     ! Read nLats, nMlts, and nTimes
-    read(iUnitAmie_) this % nLats, this % nMlts, this % nTimes
+    read(iUnitAmie_) this%nLats, this%nMlts, this%nTimes
 
     if (AMIE_iDebugLevel > 2) &
-         write(*,*) "==> nLats, nMlts, nTimes : ", &
-         this % nLats, this % nMlts, this % nTimes
-    
-    allocate(this % times(this % nTimes), stat = iError)
+      write(*, *) "==> nLats, nMlts, nTimes : ", &
+      this%nLats, this%nMlts, this%nTimes
+
+    allocate(this%times(this%nTimes), stat=iError)
     if (iError /= 0) then
-       call set_error("Error trying to allocate times in read_amie_header")
-       return
+      call set_error("Error trying to allocate times in read_amie_header")
+      return
     endif
-    allocate(this % lats(this % nLats), stat = iError)
+    allocate(this%lats(this%nLats), stat=iError)
     if (iError /= 0) then
-       call set_error("Error trying to allocate lats in read_amie_header")
-       return
+      call set_error("Error trying to allocate lats in read_amie_header")
+      return
     endif
-    allocate(this % mlts(this % nMlts), stat = iError)
+    allocate(this%mlts(this%nMlts), stat=iError)
     if (iError /= 0) then
-       call set_error("Error trying to allocate mlts in read_amie_header")
-       return
+      call set_error("Error trying to allocate mlts in read_amie_header")
+      return
     endif
 
-    read(iUnitAmie_) (this % lats(i), i=1, this % nLats)
-    this % lats = 90.0 - this % lats
-    read(iUnitAmie_) (this % mlts(i), i=1, this % nMlts)
-    read(iUnitAmie_) this % nVars
-    do iVar = 1, this % nVars
-       read(iUnitAmie_) this % varNames(iVar)
-       if (AMIE_iDebugLevel > 2) &
-            write(*,*) "==> AMIE Variable : ", iVar, this % varNames(iVar)
+    read(iUnitAmie_) (this%lats(i), i=1, this%nLats)
+    this%lats = 90.0 - this%lats
+    read(iUnitAmie_) (this%mlts(i), i=1, this%nMlts)
+    read(iUnitAmie_) this%nVars
+    do iVar = 1, this%nVars
+      read(iUnitAmie_) this%varNames(iVar)
+      if (AMIE_iDebugLevel > 2) &
+        write(*, *) "==> AMIE Variable : ", iVar, this%varNames(iVar)
     enddo
 
     ! We expect the data to be arranged from high latitudes to low
     ! latitudes.  If it is not, we need to reverse things.
-    if (this % lats(this % nLats) > this % lats(1)) then
-       this % ReverseLats = .true.
-       if (allocated(TempLats)) deallocate(TempLats)
-       allocate(TempLats(this % nLats), stat = iError)
-       if (iError /= 0) then
-          call set_error("Error: allocating templats in AMIE")
-       endif
-       TempLats = this % lats
-       do i = 1, this % nLats
-          this % lats(i) = TempLats(this % nLats + 1 - i)
-       enddo
-       this % ReverseLats = .true.
-       deallocate(TempLats)
+    if (this%lats(this%nLats) > this%lats(1)) then
+      this%ReverseLats = .true.
+      if (allocated(TempLats)) deallocate(TempLats)
+      allocate(TempLats(this%nLats), stat=iError)
+      if (iError /= 0) then
+        call set_error("Error: allocating templats in AMIE")
+      endif
+      TempLats = this%lats
+      do i = 1, this%nLats
+        this%lats(i) = TempLats(this%nLats + 1 - i)
+      enddo
+      this%ReverseLats = .true.
+      deallocate(TempLats)
     endif
-    
+
     !\
     ! We have run into a problem with AMIE during storms.
     ! The potential is not zero at the boundary.  It is sometimes quite
@@ -586,75 +585,75 @@ contains
     ! - We don't really need this for SWMF or other products that extend to
     !   lower latitudes.
     !/
-    
-    if (abs(this % lats(this % nLats)) < 40.0) then
-       nCellsPad = 1
+
+    if (abs(this%lats(this%nLats)) < 40.0) then
+      nCellsPad = 1
     else
-       nCellsPad = 15
+      nCellsPad = 15
     endif
 
     ! Now that we know how many cells to pad, we need to remake the latitude
     ! array. Seems hacky, but it works:
 
     if (allocated(TempLats)) deallocate(TempLats)
-    allocate(TempLats(this % nLats + nCellsPad), stat = iError)
+    allocate(TempLats(this%nLats + nCellsPad), stat=iError)
     if (iError /= 0) then
-       call set_error("Error: allocating templats (2nd time!) in AMIE")
+      call set_error("Error: allocating templats (2nd time!) in AMIE")
     endif
-    TempLats(1 : this % nLats) = this % lats
+    TempLats(1:this%nLats) = this%lats
 
-    if (allocated(this % lats)) deallocate(this % lats)
-    allocate(this % Lats(this % nLats + nCellsPad), stat = iError)
-    this % lats = TempLats
-    do i = this % nLats + 1, this % nLats + nCellsPad
-       this % Lats(i) = this % Lats(i - 1) + &
-            (this % Lats(this % nLats) - this % Lats(this % nLats - 1))
+    if (allocated(this%lats)) deallocate(this%lats)
+    allocate(this%Lats(this%nLats + nCellsPad), stat=iError)
+    this%lats = TempLats
+    do i = this%nLats + 1, this%nLats + nCellsPad
+      this%Lats(i) = this%Lats(i - 1) + &
+                     (this%Lats(this%nLats) - this%Lats(this%nLats - 1))
     enddo
-    if (this % lats(1) > 89.9) this % lats(1) = 90.0
+    if (this%lats(1) > 89.9) this%lats(1) = 90.0
 
     ! The header length should be this:
-    this % headerLength = &
-         4 * 3 + 8 + &
-         4 * this % nLats + 8 + &
-         4 * this % nMlts + 8 + &
-         4 + 8 + &
-         (30 + 8) * this % nVars
-    
+    this%headerLength = &
+      4*3 + 8 + &
+      4*this%nLats + 8 + &
+      4*this%nMlts + 8 + &
+      4 + 8 + &
+      (30 + 8)*this%nVars
+
     if (AMIE_iDebugLevel > 2) &
-         write(*,*) 'calculated header length : ', this % headerLength
+      write(*, *) 'calculated header length : ', this%headerLength
 
-         ! But, we noticed that the variable names can be any length, as
-         ! long as they are longer than 30 characters.  This means that the
-         ! exact length of the header is dependent on these string lengths,
-         ! which are hard to measure.  So, instead of calculating the
-         ! header length, just assign it to the current file position since
-         ! we are at the exact end of the header now:
-         ! amie_file_loc = 
-         ! this % headerLength = ftell(iUnitAmie_)
+    ! But, we noticed that the variable names can be any length, as
+    ! long as they are longer than 30 characters.  This means that the
+    ! exact length of the header is dependent on these string lengths,
+    ! which are hard to measure.  So, instead of calculating the
+    ! header length, just assign it to the current file position since
+    ! we are at the exact end of the header now:
+    ! amie_file_loc =
+    ! this % headerLength = ftell(iUnitAmie_)
 
-         ! ALB coming here and changing things. `ftell` doesn't work with nagfor, but the 
+    ! ALB coming here and changing things. `ftell` doesn't work with nagfor, but the
          !! "easy" replacement with this doesn't seem to be working either. So this block
-         !! can probably be deleted. 
-         ! INQUIRE(UNIT=iUnitAmie_, RECL=i) !get record length (header size)
-         ! write(*,*) "===>> Found Header length: ", i
-         ! this % headerLength = i
+         !! can probably be deleted.
+    ! INQUIRE(UNIT=iUnitAmie_, RECL=i) !get record length (header size)
+    ! write(*,*) "===>> Found Header length: ", i
+    ! this % headerLength = i
          !! Or use this to get the index of next record  (breaks when there are multiple times):
-         ! INQUIRE(UNIT=iUnitAmie_, NEXTREC=i) !get next record
-         
-    if (AMIE_iDebugLevel > 2) &
-         write(*,*) 'current file position : ', ftell(iUnitAmie_)
-    
-    this % oneTimeLength = &
-         6 * 4 + 8 + &
-         13 * 4 + 8 + &
-         (this % nMlts * this % nLats * 4 + 8) * this % nVars
+    ! INQUIRE(UNIT=iUnitAmie_, NEXTREC=i) !get next record
 
-    this % nTimesGoal = nMaxSize / (this % nMlts * this % nLats * nValues)
     if (AMIE_iDebugLevel > 2) &
-         write(*,*) "==> AMIE nTimesGoals : ", this % nTimesGoal
+      write(*, *) 'current file position : ', ftell(iUnitAmie_)
+
+    this%oneTimeLength = &
+      6*4 + 8 + &
+      13*4 + 8 + &
+      (this%nMlts*this%nLats*4 + 8)*this%nVars
+
+    this%nTimesGoal = nMaxSize/(this%nMlts*this%nLats*nValues)
+    if (AMIE_iDebugLevel > 2) &
+      write(*, *) "==> AMIE nTimesGoals : ", this%nTimesGoal
 
     close(iUnitAmie_)
-    
+
   end subroutine read_amie_header
 
   ! --------------------------------------------------------------------
@@ -664,7 +663,7 @@ contains
   subroutine initialize_amie_files(fileNorth, fileSouth, iDebugLevel)
 
     implicit none
-    
+
     character(len=*), intent(in) :: fileNorth, fileSouth
     integer, intent(in) :: iDebugLevel
     logical :: FileExists
@@ -687,34 +686,34 @@ contains
 
     ! 3. Initialize the Northern Hemisphere File:
 
-    allocate(allFiles(2), stat = iError)
+    allocate(allFiles(2), stat=iError)
     if (iError /= 0) then
-       call set_error("Error: allocating allFiles in initiailize_amie_files")
+      call set_error("Error: allocating allFiles in initiailize_amie_files")
     endif
 
     ! isNorth = .true., isMirror = .false.
-    call allFiles(1) % init(fileNorth, .true., .false.)
+    call allFiles(1)%init(fileNorth, .true., .false.)
     call AMIE_link_vars_to_keys(allFiles(1))
 
     if (trim(fileSouth) == 'mirror') then
-       ! isNorth = .false., isMirror = .true.
-       call allFiles(2) % init(fileNorth, .false., .true.)
+      ! isNorth = .false., isMirror = .true.
+      call allFiles(2)%init(fileNorth, .false., .true.)
     else
-       ! isNorth = .false., isMirror = .false.
-       call allFiles(2) % init(fileSouth, .false., .false.)
+      ! isNorth = .false., isMirror = .false.
+      call allFiles(2)%init(fileSouth, .false., .false.)
     endif
     call AMIE_link_vars_to_keys(allFiles(2))
-    
+
     return
 
   end subroutine initialize_amie_files
-  
+
   ! --------------------------------------------------------------------
   ! These are the names of the variables we will be looking for
   ! in the AMIE input files.  If you want to use these types of
   ! aurora, you need to use these names for the variables!
   ! --------------------------------------------------------------------
-  
+
   subroutine AMIE_link_variable_names()
 
     implicit none
@@ -735,20 +734,20 @@ contains
   ! --------------------------------------------------------------------
   ! Link all of the variable names in the files to the proper pointers
   ! --------------------------------------------------------------------
-  
+
   subroutine AMIE_link_vars_to_keys(this)
 
     implicit none
 
     class(amieFile) :: this
     integer :: iField, iVal
-    
+
     do iVal = 1, nValues
       if (AMIE_iDebugLevel > 1) &
         write(*, *) '==> Searching for ', trim(AMIE_Names(iVal))
-      do iField = 1, this % nVars
-        if (index(this % varNames(iField), trim(AMIE_Names(iVal))) > 0) then
-          this % iMap_(iVal) = iField
+      do iField = 1, this%nVars
+        if (index(this%varNames(iField), trim(AMIE_Names(iVal))) > 0) then
+          this%iMap_(iVal) = iField
           if (AMIE_iDebugLevel > 1) &
             write(*, *) "   <--- ", trim(AMIE_Names(iVal)), " Found", iField
         endif
@@ -757,9 +756,9 @@ contains
     if (AMIE_iDebugLevel > 1) then
       write(*, *) '==> Summary of variables found in AMIE file : '
       do iVal = 1, nValues
-        if (this % iMap_(iVal) > 0) then
+        if (this%iMap_(iVal) > 0) then
           write(*, *) '==> Expected : ', trim(AMIE_Names(iVal)), &
-            '; found : ', trim(this % varNames(this % iMap_(iVal)))
+            '; found : ', trim(this%varNames(this%iMap_(iVal)))
         endif
       enddo
     endif
@@ -767,34 +766,34 @@ contains
     if (.not. isOk) return
 
     ! Check to see if some of these exist:
-    if (this % iMap_(iPotential_) > 0) then
-       this % hasPotential = .true.
+    if (this%iMap_(iPotential_) > 0) then
+      this%hasPotential = .true.
     endif
-    if ((this % iMap_(iEle_diff_eflux_) > 0) .and. (this % iMap_(iEle_diff_avee_) > 0)) then
-       !call set_error("Could not find Electron Diffuse in file!")
-       this % hasDiffuse = .true.
+    if ((this%iMap_(iEle_diff_eflux_) > 0) .and. (this%iMap_(iEle_diff_avee_) > 0)) then
+      !call set_error("Could not find Electron Diffuse in file!")
+      this%hasDiffuse = .true.
     endif
 
-    if ((this % iMap_(iIon_diff_eflux_) > 0) .and. (this % iMap_(iIon_diff_avee_) > 0)) then
-      this % hasIons = .true.
+    if ((this%iMap_(iIon_diff_eflux_) > 0) .and. (this%iMap_(iIon_diff_avee_) > 0)) then
+      this%hasIons = .true.
       if (AMIE_iDebugLevel > 1) &
-           write(*, *) "==> Input Electrodynamics is using Ions!"
+        write(*, *) "==> Input Electrodynamics is using Ions!"
     else
-      this % hasIons = .false.
+      this%hasIons = .false.
     endif
-    if ((this % iMap_(iEle_mono_eflux_) > 0) .and. (this % iMap_(iEle_mono_avee_) > 0)) then
-      this % hasMono = .true.
+    if ((this%iMap_(iEle_mono_eflux_) > 0) .and. (this%iMap_(iEle_mono_avee_) > 0)) then
+      this%hasMono = .true.
       if (AMIE_iDebugLevel > 1) &
-           write(*, *) "==> Input Electrodynamics is using Mono!"
+        write(*, *) "==> Input Electrodynamics is using Mono!"
     else
-      this % hasMono = .false.
+      this%hasMono = .false.
     endif
-    if ((this % iMap_(iEle_wave_eflux_) > 0) .and. (this % iMap_(iEle_wave_avee_) > 0)) then
-      this % hasWave = .true.
+    if ((this%iMap_(iEle_wave_eflux_) > 0) .and. (this%iMap_(iEle_wave_avee_) > 0)) then
+      this%hasWave = .true.
       if (AMIE_iDebugLevel > 1) &
-           write(*, *) "==> Input Electrodynamics is using Ions!"
+        write(*, *) "==> Input Electrodynamics is using Ions!"
     else
-      this % hasWave = .false.
+      this%hasWave = .false.
     endif
 
   end subroutine AMIE_link_vars_to_keys
@@ -838,84 +837,84 @@ contains
 
     LatIn = LocIn(2)
     if (LatIn > 90.0) then
-       LatIn = 180.0 - LatIn
-       MLTIn = mod(MLTIn + 12.0, 24.0)
+      LatIn = 180.0 - LatIn
+      MLTIn = mod(MLTIn + 12.0, 24.0)
     endif
     if (LatIn < -90.0) then
-       LatIn = -180.0 - LatIn
-       MLTIn = mod(MLTIn + 12.0, 24.0)
+      LatIn = -180.0 - LatIn
+      MLTIn = mod(MLTIn + 12.0, 24.0)
     endif
 
     if (MLTIn > 24.0 .or. MLTIn < 0 .or. LatIn > 90.0 .or. LatIn < -90.0) then
-       call set_error("Input lat / mlt is outside of -90-90 and 0-24 range! (AMIE FindPoint)")
-       return
+      call set_error("Input lat / mlt is outside of -90-90 and 0-24 range! (AMIE FindPoint)")
+      return
     endif
 
     iBLK = 1
     do while (iBLK <= nFiles)
-       j = 1
-       if (allFiles(iBLK) % isNorth) then
-          sig = 1.0
-       else
-          sig = -1.0
-       endif
-       do while (j < allFiles(iBLK) % nMLTs)
-          i = 1
-          do while (i < allFiles(iBLK) % nLats)
+      j = 1
+      if (allFiles(iBLK)%isNorth) then
+        sig = 1.0
+      else
+        sig = -1.0
+      endif
+      do while (j < allFiles(iBLK)%nMLTs)
+        i = 1
+        do while (i < allFiles(iBLK)%nLats)
 
-             !\
-             ! Check to see if the point is within the current cell
-             !/
+          !\
+          ! Check to see if the point is within the current cell
+          !/
 
-             MLTUp = allFiles(iBLK) % mlts(j + 1)
-             MLTDown = allFiles(iBLK) % mlts(j)
-             if (MLTUp == 0.0 .and. MLTDown >= 23.0) MLTUp = 24.0
+          MLTUp = allFiles(iBLK)%mlts(j + 1)
+          MLTDown = allFiles(iBLK)%mlts(j)
+          if (MLTUp == 0.0 .and. MLTDown >= 23.0) MLTUp = 24.0
 
-             ! This assume that we start at the pole and go to lower latitudes:
-             if (sig * LatIn <= allFiles(iBLK) % Lats(i) .and. &
-                  sig * LatIn > allFiles(iBLK) % Lats(i + 1) .and. &
-                  MLTIn < MLTUp .and. &
-                  MLTIn >= MLTDown) then
+          ! This assume that we start at the pole and go to lower latitudes:
+          if (sig*LatIn <= allFiles(iBLK)%Lats(i) .and. &
+              sig*LatIn > allFiles(iBLK)%Lats(i + 1) .and. &
+              MLTIn < MLTUp .and. &
+              MLTIn >= MLTDown) then
 
-                !\
-                ! If it is, then store the cell number and calculate
-                ! the interpolation coefficients.
-                !/
+            !\
+            ! If it is, then store the cell number and calculate
+            ! the interpolation coefficients.
+            !/
 
-                LocOut(1) = iBLK
-                LocOut(2) = j
-                LocOut(3) = i
+            LocOut(1) = iBLK
+            LocOut(2) = j
+            LocOut(3) = i
 
-                LocOut(4) = (MLTIn - MLTDown)/ &
-                     (MLTUp - MLTDown)
-                ! To keep the MLT and LAT ratios uses consistent, we need to calculate
-                ! the ratios backward, since lat shrinks with increasing index:
-                LocOut(5) = (allFiles(iBLK) % Lats(i) - sig * LatIn)/ &
-                     (allFiles(iBLK) % Lats(i) - allFiles(iBLK) % Lats(i + 1))
+            LocOut(4) = (MLTIn - MLTDown)/ &
+                        (MLTUp - MLTDown)
+            ! To keep the MLT and LAT ratios uses consistent, we need to calculate
+            ! the ratios backward, since lat shrinks with increasing index:
+            LocOut(5) = (allFiles(iBLK)%Lats(i) - sig*LatIn)/ &
+                        (allFiles(iBLK)%Lats(i) - allFiles(iBLK)%Lats(i + 1))
 
-                ! Once we find the point, just push all of the
-                ! counters to the max value, which exists all of the
-                ! loops:
-                iBLK = nFiles
-                j = allFiles(iBLK) % nMLTs
-                i = allFiles(iBLK) % nLats
+            ! Once we find the point, just push all of the
+            ! counters to the max value, which exists all of the
+            ! loops:
+            iBLK = nFiles
+            j = allFiles(iBLK)%nMLTs
+            i = allFiles(iBLK)%nLats
 
-             endif
+          endif
 
-             i = i + 1
+          i = i + 1
 
-          enddo
+        enddo
 
-          j = j + 1
+        j = j + 1
 
-       enddo
+      enddo
 
-       iBLK = iBLK + 1
+      iBLK = iBLK + 1
 
     enddo
 
     if (AMIE_iDebugLevel > 4) &
-       write(*,*) 'file point!', LatIn, MltIn, LocOut
+      write(*, *) 'file point!', LatIn, MltIn, LocOut
 
   end subroutine FindPoint
 
@@ -927,49 +926,49 @@ contains
 
     integer, intent(in) :: nMltsIn, nLatsIn
     real, intent(in) :: mltsIn(nMltsIn, nLatsIn), latsIn(nMltsIn, nLatsIn)
-    
+
     real, dimension(2) :: mlt_and_lat
     real, dimension(5) :: interpolation_info
     integer :: iError, iLat, iMlt
 
     nMltsNeeded = nMltsIn
     nLatsNeeded = nLatsIn
-    
+
     if (AMIE_iDebugLevel > 2) &
-         write(*,*) "=> Getting interpolation indices from AMIE files", nMltsIn, nLatsIn
+      write(*, *) "=> Getting interpolation indices from AMIE files", nMltsIn, nLatsIn
     if (allocated(interpolationIndices)) then
-       deallocate(interpolationIndices)
-       deallocate(interpolationRatios)
+      deallocate(interpolationIndices)
+      deallocate(interpolationRatios)
     endif
-    allocate(interpolationIndices(nMltsIn, nLatsIn, 3), stat = iError)
+    allocate(interpolationIndices(nMltsIn, nLatsIn, 3), stat=iError)
     if (iError /= 0) then
-       call set_error("Error allocating interpolationIndices!")
-       return
+      call set_error("Error allocating interpolationIndices!")
+      return
     endif
-    allocate(interpolationRatios(nMltsIn, nLatsIn, 2), stat = iError)
+    allocate(interpolationRatios(nMltsIn, nLatsIn, 2), stat=iError)
     if (iError /= 0) then
-       call set_error("Error allocating interpolationRatios!")
-       return
+      call set_error("Error allocating interpolationRatios!")
+      return
     endif
 
     interpolationIndices = -1
-    
+
     do iMlt = 1, nMltsIn
-       do iLat = 1, nLatsIn
-          mlt_and_lat(1) = mltsIn(iMlt, iLat)
-          mlt_and_lat(2) = latsIn(iMlt, iLat)
-          call FindPoint(mlt_and_lat, interpolation_info)
-          if (iError == 0) then
-             interpolationIndices(iMlt, iLat, 1:3) = interpolation_info(1:3)
-             interpolationRatios(iMlt, iLat, 1:2) = interpolation_info(4:5)
-          else
-             interpolationIndices(iMlt, iLat, 1:3) = -1
-          endif
-       enddo
+      do iLat = 1, nLatsIn
+        mlt_and_lat(1) = mltsIn(iMlt, iLat)
+        mlt_and_lat(2) = latsIn(iMlt, iLat)
+        call FindPoint(mlt_and_lat, interpolation_info)
+        if (iError == 0) then
+          interpolationIndices(iMlt, iLat, 1:3) = interpolation_info(1:3)
+          interpolationRatios(iMlt, iLat, 1:2) = interpolation_info(4:5)
+        else
+          interpolationIndices(iMlt, iLat, 1:3) = -1
+        endif
+      enddo
     enddo
-    
+
   end subroutine set_interpolation_indices
-  
+
   ! --------------------------------------------------------------------
   ! Get Value from File System
   ! --------------------------------------------------------------------
@@ -980,25 +979,25 @@ contains
     real, intent(inout) ::  valueOut(nMltsNeeded, nLatsNeeded)
     integer :: iMlt, iLat, iB, iM, iL
     real :: dM, dL
-    
+
     do iMlt = 1, nMltsNeeded
-       do iLat = 1, nLatsNeeded
-          
-          iB = interpolationIndices(iMLT, iLat, 1)
-          iM = interpolationIndices(iMLT, iLat, 2)
-          iL = interpolationIndices(iMLT, iLat, 3)
-          dM = interpolationRatios(iMLT, iLat, 1)
-          dL = interpolationRatios(iMLT, iLat, 2)
+      do iLat = 1, nLatsNeeded
 
-          if (iB > 0) then
-             ValueOut(iMLT, iLat) = &
-                  (1.0 - dM) * (1.0 - dL) * allFiles(iB) % dataOneTime(iVarToGetIn, iM, iL) + &
-                  (1.0 - dM)*(dL) * allFiles(iB) % dataOneTime(iVarToGetIn, iM, IL + 1) + &
-                  (dM)*(dL) * allFiles(iB) % dataOneTime(iVarToGetIn, iM + 1, IL + 1) + &
-                  (dM)*(1.0 - dL) * allFiles(iB) % dataOneTime(iVarToGetIn, iM + 1, IL)
-          endif
+        iB = interpolationIndices(iMLT, iLat, 1)
+        iM = interpolationIndices(iMLT, iLat, 2)
+        iL = interpolationIndices(iMLT, iLat, 3)
+        dM = interpolationRatios(iMLT, iLat, 1)
+        dL = interpolationRatios(iMLT, iLat, 2)
 
-       enddo
+        if (iB > 0) then
+          ValueOut(iMLT, iLat) = &
+            (1.0 - dM)*(1.0 - dL)*allFiles(iB)%dataOneTime(iVarToGetIn, iM, iL) + &
+            (1.0 - dM)*(dL)*allFiles(iB)%dataOneTime(iVarToGetIn, iM, IL + 1) + &
+            (dM)*(dL)*allFiles(iB)%dataOneTime(iVarToGetIn, iM + 1, IL + 1) + &
+            (dM)*(1.0 - dL)*allFiles(iB)%dataOneTime(iVarToGetIn, iM + 1, IL)
+        endif
+
+      enddo
     enddo
     return
   end subroutine get_amie_values
@@ -1010,7 +1009,7 @@ contains
   subroutine get_amie_potential(potentialOut)
     real, intent(inout) ::  PotentialOut(nMltsNeeded, nLatsNeeded)
     if (AMIE_iDebugLevel > 3) &
-         write(*,*) "=> Getting Electric Potential from AMIE"
+      write(*, *) "=> Getting Electric Potential from AMIE"
     call get_amie_values(iPotential_, PotentialOut)
   end subroutine get_amie_potential
 
@@ -1021,7 +1020,7 @@ contains
   subroutine get_amie_electron_diffuse_eflux(elecDiffEfluxOut)
     real, intent(inout) ::  elecDiffEfluxOut(nMltsNeeded, nLatsNeeded)
     if (AMIE_iDebugLevel > 3) &
-         write(*,*) "=> Getting Electron Diffuse Energy Flux from AMIE"
+      write(*, *) "=> Getting Electron Diffuse Energy Flux from AMIE"
     call get_amie_values(iEle_diff_eflux_, elecDiffEfluxOut)
   end subroutine get_amie_electron_diffuse_eflux
 
@@ -1032,7 +1031,7 @@ contains
   subroutine get_amie_electron_diffuse_avee(elecDiffAveEOut)
     real, intent(inout) ::  elecDiffAveEOut(nMltsNeeded, nLatsNeeded)
     if (AMIE_iDebugLevel > 3) &
-         write(*,*) "=> Getting Electron Diffuse Average Energy from AMIE"
+      write(*, *) "=> Getting Electron Diffuse Average Energy from AMIE"
     call get_amie_values(iEle_diff_avee_, elecDiffAveEOut)
   end subroutine get_amie_electron_diffuse_avee
 
