@@ -36,6 +36,7 @@ module ModFTAModel
   real, dimension(nMltsFta, nLatsFta) :: AveEResult
   real, dimension(nMltsFta, nLatsFta) :: LBHLResult
   real, dimension(nMltsFta, nLatsFta) :: LBHSResult
+  real, dimension(nMltsFta, nLatsFta) :: PolarCapResult
   
   real :: AL_split = 500.0
   
@@ -45,16 +46,18 @@ contains
   ! 
   ! ------------------------------------------------------------------------
 
-  subroutine get_fta_model_result(mlt, lat, eFluxOut, AveEOut)
+  subroutine get_fta_model_result(mlt, lat, eFluxOut, AveEOut, polarCapOut)
     real, intent(in) :: mlt
     real, intent(in) :: lat
     real, intent(out) :: eFluxOut
     real, intent(out) :: AveEOut
+    real, intent(out) :: polarCapOut
     integer :: iMlt 
     integer :: iLat
     if (abs(lat) < minLat) then
        eFluxOut = 0.0
        AveEOut = 2.0
+       polarCapOut = 0.0
        return
     endif
     iMlt = int(mlt / dMlt) + 1
@@ -62,6 +65,7 @@ contains
     ! In the FTA model, we take the closest value, since this is flux-based
     eFluxOut = eFluxResult(iMlt, iLat)
     AveEOut = AveEResult(iMlt, iLat)
+    polarCapOut = polarCapResult(iMlt, iLat)
     return
   end subroutine get_fta_model_result
 
@@ -79,7 +83,7 @@ contains
      character (len=10) :: emis_type
 
      real, dimension(nMltsFta, nEnergies) :: mlats0_l, efs0_l, mlats0_s, efs0_s 
-     real, dimension(nMltsFta, nLatsFta) :: lbhl, lbhs, avee, eflux 
+     real, dimension(nMltsFta, nLatsFta) :: lbhl, lbhs, avee, eflux, polarcap
     
      iError = 0
 
@@ -104,10 +108,10 @@ contains
      ! -----------------------------------------------------------------------
 
      if (al > -25.0) al = -25.0
-     if (al < -1200.0) al = -1200.0
-     if (au < 0.12*abs(al)) au = 0.12*abs(al)
+     !if (al < -1200.0) al = -1200.0
+     !if (au < 0.12*abs(al)) au = 0.12*abs(al)
      if (au < 25.0) au = 25.0
-     if (au > 400.0) au = 400.0
+     !if (au > 400.0) au = 400.0
      ae = au - al
 
      emis_type = 'lbhl'
@@ -117,12 +121,13 @@ contains
      call calc_emission_pattern(au, al, emis_type, mlats0_s, efs0_s)
 
      call calc_full_patterns(mlats0_l, efs0_l, mlats0_s, efs0_s, &
-          lbhl, lbhs, eflux, avee)
+          lbhl, lbhs, eflux, avee, polarcap)
 
      LBHLResult = lbhl
      LBHSResult = lbhs
      eFluxResult = eflux
      AveEResult = avee
+     polarCapResult = polarcap
      
    end subroutine update_fta_model
 
@@ -466,28 +471,36 @@ contains
   subroutine calc_full_patterns( &
        mlats0_l, efs0_l, &
        mlats0_s, efs0_s, &
-       lbhl, lbhs, eflux, avee)
+       lbhl, lbhs, eflux, avee, polarcap)
 
     real, dimension(nMltsFta, nEnergies), intent(in) :: mlats0_l, efs0_l
     real, dimension(nMltsFta, nEnergies), intent(in) :: mlats0_s, efs0_s
-    real, dimension(nMltsFta, nLatsFta), intent(out) :: lbhl, lbhs, avee, eflux 
+    real, dimension(nMltsFta, nLatsFta), intent(out) :: lbhl, lbhs, avee, eflux
+    real, dimension(nMltsFta, nLatsFta), intent(out) :: polarcap
+    real, dimension(nLatsFta) :: polarcap1d
     real, dimension(80):: emission_lat
     real, dimension(nEnergies) :: emission_en, lats_en
     integer :: i
-    
+
+    polarcap = 0.0
     do i = 1, nMltsFta
        ! bin and interp lbhl in each MLT sector
        emission_en = efs0_l(i,:)
-       lats_en = mlats0_l(i,:)
+       lats_en = (mlats0_l(i,:) + mlats0_s(i,:)) / 2.0
        call interp_to_lat_grid(lats_en, emission_en, emission_lat)
        lbhl(i,:) = emission_lat
 
        ! bin and interp lbhs in each MLT sector
        emission_en = efs0_s(i,:)
-       lats_en = mlats0_s(i,:)
+       lats_en = (mlats0_l(i,:) + mlats0_s(i,:)) / 2.0
        call interp_to_lat_grid(lats_en, emission_en, emission_lat)
        lbhs(i,:) = emission_lat
 
+       polarcap1d = 0.0
+       where (lats_fixed_grid > lats_en(nEnergies))
+          polarcap1d = 1.0
+       endwhere
+       polarcap(i,:) = polarcap1d
     enddo
 
     eflux = lbhl / 110.0
