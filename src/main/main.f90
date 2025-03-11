@@ -53,9 +53,9 @@ program test_01
 
   ! Set aurora model:
 !   call model % aurora_model("hpi")
-  call model % aurora_model("fre")
+!   call model % aurora_model("fre")
 !   call model % aurora_model("pem")
-!   call model % aurora_model("fta")
+   call model % aurora_model("fta")
 !   call model % aurora_model("amie")
 
   ! Set where the code can find the model files:
@@ -207,10 +207,10 @@ program test_01
      ! Get electron diffuse aurora from the IE library:
      call model % get_aurora(eDiffuseEflux, eDiffuseAvee)
      !   write(*,*) potential
+     call model % get_polarcap(polarcap)
 
      call output_ie(iError)
      if (iError /= 0) call set_error("Main: Error in output_ie")
-
      
      write(*,*) '  --> CPCP : ', maxval(potential) - minval(potential)
      write(*,*) '  --> max eflux : ', maxval(eDiffuseEflux)

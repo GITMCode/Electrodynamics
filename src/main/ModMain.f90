@@ -41,6 +41,7 @@ Module ModMain
   real, allocatable :: eMonoEflux(:, :)
   real, allocatable :: eWaveAvee(:, :)
   real, allocatable :: eWaveEflux(:, :)
+  real, allocatable :: polarCap(:, :)
   
 contains
 
@@ -64,6 +65,7 @@ contains
     allocate(eMonoEflux(nLons, nLats))
     allocate(eWaveAvee(nLons, nLats))
     allocate(eWaveEflux(nLons, nLats))
+    allocate(polarcap(nLons, nLats))
 
     if (isGeographic) then
        allocate(geoLats(nLons, nLats))
@@ -96,6 +98,7 @@ contains
     deallocate(eMonoEflux)
     deallocate(eWaveAvee)
     deallocate(eWaveEflux)
+    deallocate(polarcap)
 
     if (isGeographic) then
        deallocate(geoLats)
