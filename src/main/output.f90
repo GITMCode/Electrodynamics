@@ -36,19 +36,21 @@ subroutine output_ie(iError)
      if (isGeographic) then
         write(LunMainOutput) 90.0 - abs(geoLats(1,:))
         write(LunMainOutput) geoLons(:,1)/15.0
-        write(LunMainOutput) 5
+        write(LunMainOutput) 6
         write(LunMainOutput) 'Electric Potential (kV)       '
         write(LunMainOutput) 'Auroral Energy Flux (mW/m2)   '
         write(LunMainOutput) 'Auroral Mean Energy (keV)     '
+        write(LunMainOutput) 'isPolarCap                    '
         write(LunMainOutput) 'Magnetic Latitude (deg)       '
         write(LunMainOutput) 'Magnetic Local Time (hours)   '
      else
         write(LunMainOutput) 90.0 - abs(magLats(1,:))
         write(LunMainOutput) magMlts(:,1)
-        write(LunMainOutput) 3
+        write(LunMainOutput) 4
         write(LunMainOutput) 'Electric Potential (kV)       '
         write(LunMainOutput) 'Auroral Energy Flux (mW/m2)   '
         write(LunMainOutput) 'Auroral Mean Energy (keV)     '
+        write(LunMainOutput) 'isPolarCap                    '
         
      endif
 
@@ -70,6 +72,8 @@ subroutine output_ie(iError)
        ((eDiffuseEFlux(j, i), j = 1, nLons), i = 1, nLats) 
   write(LunMainOutput) &
        ((eDiffuseAveE(j, i), j = 1, nLons), i = 1, nLats) 
+  write(LunMainOutput) &
+       ((polarCap(j, i), j = 1, nLons), i = 1, nLats) 
 
   if (isGeographic) then
      write(LunMainOutput) &
