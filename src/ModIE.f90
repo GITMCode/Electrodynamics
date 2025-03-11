@@ -65,17 +65,19 @@ MODULE ModIE
      ! Potentials:
      real, allocatable, dimension(:,:,:) :: havePotential
      ! Electron diffuse:
-     real, allocatable, dimension(:,:,:) :: haveDiffuseEeFlux
-     real, allocatable, dimension(:,:,:) :: haveDiffuseEAveE
+     real, allocatable, dimension(:,:) :: haveDiffuseEeFlux
+     real, allocatable, dimension(:,:) :: haveDiffuseEAveE
      ! Ion diffuse:
-     real, allocatable, dimension(:,:,:) :: haveDiffuseIeFlux
-     real, allocatable, dimension(:,:,:) :: haveDiffuseIAveE
+     real, allocatable, dimension(:,:) :: haveDiffuseIeFlux
+     real, allocatable, dimension(:,:) :: haveDiffuseIAveE
      ! Discrete or Monoenergetic:
-     real, allocatable, dimension(:,:,:) :: haveMonoEeFlux
-     real, allocatable, dimension(:,:,:) :: haveMonoEAveE
+     real, allocatable, dimension(:,:) :: haveMonoEeFlux
+     real, allocatable, dimension(:,:) :: haveMonoEAveE
      ! Broadband or Wave-drive:
-     real, allocatable, dimension(:,:,:) :: haveWaveEeFlux
-     real, allocatable, dimension(:,:,:) :: haveWaveEAveE
+     real, allocatable, dimension(:,:) :: haveWaveEeFlux
+     real, allocatable, dimension(:,:) :: haveWaveEAveE
+     ! Is Polar Cap (1 if is polar cap, 0 otherwise):
+     real, allocatable, dimension(:,:) :: havePolarCap
      
      ! ----------------------------------------------------------------
      ! These are what the code that is calling this library needs
@@ -167,6 +169,7 @@ MODULE ModIE
      procedure :: hepmay => run_heppner_maynard_model
      procedure :: fta => run_fta_model
      procedure :: hpi_pem => run_hpi_pem_model
+     procedure :: get_polarcap => get_polarcap_results
 
   end type ieModel
 
