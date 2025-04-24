@@ -117,6 +117,13 @@ MODULE ModIE
     logical :: doReadKp = .false.
     logical :: doReadHPI = .false. ! not actually used yet. remove noaa hpi altogether??
 
+    ! --------------------------------------------------------------------------
+    ! Keep track of whether model has been run after time & indices are updated
+    ! --------------------------------------------------------------------------
+
+    logical :: isAuroraUpdated = .false.
+    logical :: isPotentialUpdated = .false.
+
   contains
 
     ! Set verbose level:
@@ -169,7 +176,7 @@ MODULE ModIE
     procedure :: hepmay => run_heppner_maynard_model
     procedure :: fta => run_fta_model
     procedure :: hpi_pem => run_hpi_pem_model
-     procedure :: get_polarcap => get_polarcap_results
+    procedure :: get_polarcap => get_polarcap_results
 
   end type ieModel
 
@@ -253,7 +260,7 @@ contains
       name = 'pem'
       call read_conductance_model(name, this%modelDir, this%iDebugLevel)
     endif
-    
+
   end subroutine initialize
 
   ! ------------------------------------------------------------
@@ -288,7 +295,10 @@ contains
 
     this%currentTime = ut
 
-    ! Now, do some updating of different models if needed:
+    this%isAuroraUpdated = .false.
+    this%isPotentialUpdated = .false.
+    
+    ! Now, do some updating of different model parameters if needed:
 
     if (this%iEfield_ == iWeimer05_) then
       call time_real_to_int(ut, itime)
@@ -328,6 +338,10 @@ contains
     iTime(7) = 0
     call time_int_to_real(iTime, ut)
     call this%time_real(ut)
+
+    this%isAuroraUpdated = .false.
+    this%isPotentialUpdated = .false.
+
   end subroutine set_time_ymdhms
 
   ! ------------------------------------------------------------

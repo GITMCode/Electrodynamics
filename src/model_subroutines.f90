@@ -81,6 +81,9 @@
     if (ie%iEfield_ == iHepMay_) call ie%hepmay(potential)
 
     if (ie%iEfield_ == iAmiePot_) call get_amie_potential(potential)
+    
+    this%isAuroraUpdated = .true.
+    this%isPotentialUpdated = .true.
 
     return
   end subroutine run_potential_model
@@ -216,7 +219,8 @@
         call get_amie_electron_diffuse_avee(AveE)
       endif
 
-    endif
+    this%isAuroraUpdated = .true.
+    this%isPotentialUpdated = .true.
 
     return
   end subroutine run_aurora_model

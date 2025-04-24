@@ -55,6 +55,8 @@ subroutine set_bz(this, value)
   if (this%iDebugLevel > 2) &
     write(*, *) "=> Setting imf bz : ", value
   this%needImfBz = value
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_bz
 
 ! ------------------------------------------------------------
@@ -65,6 +67,8 @@ subroutine set_by(this, value)
   if (this%iDebugLevel > 2) &
     write(*, *) "=> Setting imf by : ", value
   this%needImfBy = value
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_by
 
 ! ------------------------------------------------------------
@@ -76,6 +80,8 @@ subroutine set_swv(this, value)
     write(*, *) "=> Setting Solar Wind Velocity: ", value
   ! Make sure that this velocity is a positive value:
   this%needSwV = abs(value)
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_swv
 
 ! ------------------------------------------------------------
@@ -86,6 +92,8 @@ subroutine set_swn(this, value)
   if (this%iDebugLevel > 2) &
     write(*, *) "=> Setting Solar Wind Density: ", value
   this%needSwN = value
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_swn
 
 ! ------------------------------------------------------------
@@ -99,6 +107,8 @@ subroutine set_hp(this, value)
   ! If the user calls this routine, then it sets the north and south HPs
   this%needHpN = value
   this%needHpS = value
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_hp
 
 ! ------------------------------------------------------------
@@ -109,6 +119,8 @@ subroutine set_hpn(this, value)
   if (this%iDebugLevel > 2) &
     write(*, *) "=> Setting Hemispheric Power (in north) : ", value
   this%needHpN = value
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_hpn
 
 ! ------------------------------------------------------------
@@ -119,6 +131,8 @@ subroutine set_hps(this, value)
   if (this%iDebugLevel > 2) &
     write(*, *) "=> Setting Hemispheric Power (in south) : ", value
   this%needHpS = value
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_hps
 
 ! ------------------------------------------------------------
@@ -136,6 +150,9 @@ subroutine set_hp_from_ae(this, value)
       write(*, *) "                       HP = ", this%needHp
     endif
   endif
+  ! also set in the following routines in case this is ever removed:
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_hp_from_ae
 
 ! ------------------------------------------------------------
@@ -149,6 +166,8 @@ subroutine set_au(this, value)
   ! derive AE, done in both functions so that the last one called works
   this%needAe = this%needAu - this%needAl
   call this%aehp(this%needAe)
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_au
 
 ! ------------------------------------------------------------
@@ -162,6 +181,8 @@ subroutine set_al(this, value)
   ! derive AE, done in both functions so that the last one called works
   this%needAe = this%needAu - this%needAl
   call this%aehp(this%needAe)
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_al
 
 ! ------------------------------------------------------------
@@ -173,6 +194,8 @@ subroutine set_ae(this, value)
     write(*, *) "=> Setting AE : ", value
   this%needAe = value
   call this%aehp(this%needAe)
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_ae
 
 ! ------------------------------------------------------------
@@ -201,5 +224,7 @@ subroutine set_kp(this, value)
   if (this%iDebugLevel > 2) &
     write(*, *) "=> Setting Kp : ", value
   this%needKp = value
+  this%isAuroraUpdated = .false.
+  this%isPotentialUpdated = .false.
 end subroutine set_kp
 
