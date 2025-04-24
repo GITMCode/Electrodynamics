@@ -17,7 +17,7 @@
     class(ieModel) :: this
     character(len=*), intent(in) :: aurora_model
     if (this%iDebugLevel > 0) &
-         write(*,*) "=> Setting aurora model to : ", trim(aurora_model)
+      write(*, *) "=> Setting aurora model to : ", trim(aurora_model)
     this%iAurora_ = aurora_interpret_name(aurora_model)
     if (this%iDebugLevel > 0) &
       write(*, *) "=> That is model : ", this%iAurora_
@@ -81,9 +81,8 @@
     if (ie%iEfield_ == iHepMay_) call ie%hepmay(potential)
 
     if (ie%iEfield_ == iAmiePot_) call get_amie_potential(potential)
-    
-    this%isAuroraUpdated = .true.
-    this%isPotentialUpdated = .true.
+
+    ie%isPotentialUpdated = .true.
 
     return
   end subroutine run_potential_model
@@ -169,9 +168,28 @@
   ! run aurora model
   ! Since there can be a lot of different types of aurora, and
   ! some models offer some things, while other models don't,
-  ! we break the functionality into multiple parts.
-  
-  subroutine run_aurora_model(ie, eflux, avee)
+  ! we break the running & returning into separate parts (when possible).
+  ! On the first get_aurora_* call after setting new times or indices,
+  ! model outputs are updated for everything possible.
+
+  subroutine run_aurora_model(ie)
+    class(ieModel) :: ie
+    integer :: iError = 0
+
+    call ie%check_time()
+    call ie%check_indices()
+
+    if (ie%iAurora_ == iFTA_) call update_fta_model(ie%needAu, ie%needAl, iError)
+
+    if (ie%iAurora_ == iOvationPrime_) call update_newell_model(ie%needImfBy, ie%needIMFBz, ie%needSWV)
+
+    ie%isAuroraUpdated = .true.
+
+    return
+
+  end subroutine run_aurora_model
+
+  subroutine run_aurora_model_electron_diffuse(ie, eflux, avee)
     use ModAMIE_Interface, only: &
       get_amie_electron_diffuse_eflux, &
       get_amie_electron_diffuse_avee
@@ -181,49 +199,40 @@
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(out) :: AveE
     integer :: iError = 0
-    
-    eFlux = 0.001 ! ergs/cm2/s
-    AveE = 3.0 ! keV
 
-    call ie%check_time()
-    call ie%check_indices()
-
-    ! I think this is worthwhile to have, but masks errors in potential.
-    if (.not. isOk) then 
-       call set_error("Not ok, exiting run_aurora_model without doing anything.")
-       return
+    if (.not. ie%isAuroraUpdated) then
+      call run_aurora_model(ie)
+      ie%isAuroraUpdated = .true.
     endif
 
+    eFlux = 0.001 ! ergs/cm2/s
+    AveE = 1.0 ! keV
 
     if (allocated(ie%havePolarCap)) deallocate(ie%havePolarCap)
-    allocate(ie%havePolarCap(ie%neednMlts, ie%neednLats), stat = iError)
+    allocate(ie%havePolarCap(ie%neednMlts, ie%neednLats), stat=iError)
     if (iError /= 0) then
-       isOk = .false.
-       call set_error("run_aurora_model - failed to allocate havepolarcap.")
-       return
+      isOk = .false.
+      call set_error("run_aurora_model - failed to allocate havepolarcap.")
+      return
     endif
 
     ie%havePolarCap = 0.0
-   
-      if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE, ie%havePolarCap)
-      ! These two models are the same, because they use the same
-      if (ie%iAurora_ == iFRE_) call ie%hpi_pem(eFlux, AveE)
-      if (ie%iAurora_ == iPEM_) call ie%hpi_pem(eFlux, AveE)
+
     if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE, ie%havePolarCap)
     ! These two models are the same, because they use the same
     if (ie%iAurora_ == iFRE_) call ie%hpi_pem(eFlux, AveE)
     if (ie%iAurora_ == iPEM_) call ie%hpi_pem(eFlux, AveE)
 
-      if (ie%iAurora_ == iAmieAur_) then
-        call get_amie_electron_diffuse_eflux(eFlux)
-        call get_amie_electron_diffuse_avee(AveE)
-      endif
+    if (ie%iAurora_ == iAmieAur_) then
+      call get_amie_electron_diffuse_eflux(eFlux)
+      call get_amie_electron_diffuse_avee(AveE)
+    endif
 
-    this%isAuroraUpdated = .true.
-    this%isPotentialUpdated = .true.
+    if (ie%iAurora_ == iOvationPrime_) call ie%ovation_e_diffuse(eFlux, AveE)
 
     return
-  end subroutine run_aurora_model
+  end subroutine run_aurora_model_electron_diffuse
+
   ! ------------------------------------------------------------
   ! These functions are for getting information that was
   ! derived when the auroral model was run
@@ -231,17 +240,17 @@
 
   ! Supply the polar cap to the user:
   ! polarcap = 1 inside the polar cap, and 0 elsewhere.
-  
+
   subroutine get_polarcap_results(ie, polarcap)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
-         ie%neednLats), intent(out) :: polarcap
+                    ie%neednLats), intent(out) :: polarcap
 
     if (maxval(ie%havePolarCap) == 0) then
-       isOk = .false.
-       call set_error("polar cap is not set, be careful!")
+      isOk = .false.
+      call set_error("polar cap is not set, be careful!")
     endif
-    
+
     polarcap = ie%havePolarCap
 
     return
@@ -260,7 +269,6 @@
     real :: eFluxVal, AveEVal, polarCapVal
     integer :: iError = 0, iMlt, iLat
 
-    call update_fta_model(ie%needAu, ie%needAl, iError)
     if (iError /= 0) then
       call set_error('FTA Model update has an error!')
       return
@@ -274,7 +282,7 @@
           eFluxVal, AveEVal, polarCapVal)
         eFlux(iMlt, iLat) = eFluxVal
         AveE(iMlt, iLat) = AveEVal
-          polarCap(iMlt, iLat) = polarCapVal
+        polarCap(iMlt, iLat) = polarCapVal
       enddo
     enddo
     return
@@ -310,5 +318,104 @@
     return
   end subroutine run_hpi_pem_model
 
-  
-  
+! ------------------------------------------------------------
+  ! run OVATION Model, providing E-Flux & numflux (Diffuse, Mono, Wave ???)
+  subroutine run_ovation_model_electron_diffuse(ie, eflux, AveE)
+    class(ieModel) :: ie
+
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(inout) :: eFlux
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(inout) :: AveE
+
+    real :: eFluxVal, AveEVal, hp
+    integer :: iError = 0, iMlt, iLat
+
+    do iMLT = 1, ie%neednMLTs - 1
+      do iLat = 1, ie%neednLats - 1
+        call get_newell_electron_diffuse( &
+          ie%needMlts(iMlt, iLat), &
+          ie%needLats(iMlt, iLat), &
+          eFluxVal, AveEVal)
+        eFlux(iMlt, iLat) = eFluxVal
+        AveE(iMlt, iLat) = AveEVal
+      enddo
+    enddo
+
+    return
+
+  end subroutine run_ovation_model_electron_diffuse
+
+  subroutine run_aurora_model_electron_mono(ie, eflux, avee)
+    class(ieModel) :: ie
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: eFlux
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: AveE
+
+    real :: eFluxVal, AveEVal, hp
+    integer :: iError = 0, iMlt, iLat
+
+    do iMLT = 1, ie%neednMLTs - 1
+      do iLat = 1, ie%neednLats - 1
+        call get_newell_electron_mono( &
+          ie%needMlts(iMlt, iLat), &
+          ie%needLats(iMlt, iLat), &
+          eFluxVal, AveEVal)
+        eFlux(iMlt, iLat) = eFluxVal
+        AveE(iMlt, iLat) = AveEVal
+      enddo
+    enddo
+
+    return
+
+  end subroutine run_aurora_model_electron_mono
+
+  subroutine run_aurora_model_electron_wave(ie, eflux, avee)
+    class(ieModel) :: ie
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: eFlux
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: AveE
+
+    real :: eFluxVal, AveEVal, hp
+    integer :: iError = 0, iMlt, iLat
+
+    do iMLT = 1, ie%neednMLTs - 1
+      do iLat = 1, ie%neednLats - 1
+        call get_newell_electron_wave( &
+          ie%needMlts(iMlt, iLat), &
+          ie%needLats(iMlt, iLat), &
+          eFluxVal, AveEVal)
+        eFlux(iMlt, iLat) = eFluxVal
+        AveE(iMlt, iLat) = AveEVal
+      enddo
+    enddo
+
+    return
+  end subroutine run_aurora_model_electron_wave
+
+  subroutine run_aurora_model_ion_diffuse(ie, eflux, avee)
+    class(ieModel) :: ie
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: eFlux
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: AveE
+
+    real :: eFluxVal, AveEVal, hp
+    integer :: iError = 0, iMlt, iLat
+
+    do iMLT = 1, ie%neednMLTs - 1
+      do iLat = 1, ie%neednLats - 1
+        call get_newell_ion_diffuse( &
+          ie%needMlts(iMlt, iLat), &
+          ie%needLats(iMlt, iLat), &
+          eFluxVal, AveEVal)
+        eFlux(iMlt, iLat) = eFluxVal
+        AveE(iMlt, iLat) = AveEVal
+      enddo
+    enddo
+
+    return
+
+  end subroutine run_aurora_model_ion_diffuse

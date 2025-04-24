@@ -14,7 +14,7 @@
     class(ieModel) :: this
     integer, intent(in) :: iValue
     if (this%iDebugLevel > 3) &
-      write(*, *) "=> Setting neednMlts to : ", iValue
+      write(*, *) "=> Setting neednMlats to : ", iValue
     this%neednLats = iValue
   end subroutine set_nLats
 

@@ -45,6 +45,15 @@ subroutine run_check_indices(this)
       call set_error("Aurora - Hemispheric Power (south) index not set!")
   endif
 
+  if (this%iAurora_ == iOvationPrime_) then
+    if (this%needImfBy == rBadValue) &
+      call set_error("Aurora - IMF By not set!")
+    if (this%needImfBz == rBadValue) &
+      call set_error("Aurora - IMF Bz not set!")
+    if (this%needSwV == rBadValue) &
+      call set_error("Aurora - IMF Vx not set!")
+  endif
+
 end subroutine run_check_indices
 
 ! ------------------------------------------------------------

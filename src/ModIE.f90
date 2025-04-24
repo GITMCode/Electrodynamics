@@ -8,6 +8,7 @@ MODULE ModIE
   use EIE_ModWeimer, only: get_tilt
   use ModFtaModel
   use ModIHP
+  use ModNewell
   use ModAMIE_Interface, only: initialize_amie_files, update_amie_files
   use ModKind
 
@@ -27,9 +28,9 @@ MODULE ModIE
   integer, parameter, public :: iFTA_ = 1
   integer, parameter, public :: iFRE_ = 2
   integer, parameter, public :: iPEM_ = 3
-  integer, parameter, public :: iOvationPrime_ = 3
-  integer, parameter, public :: iOvationSme_ = 4
-  integer, parameter, public :: iAmieAur_ = 5
+  integer, parameter, public :: iOvationPrime_ = 4
+  integer, parameter, public :: iOvationSme_ = 5
+  integer, parameter, public :: iAmieAur_ = 6
 
   real, parameter, public :: rBadValue = -1.0e32
 
@@ -171,12 +172,17 @@ MODULE ModIE
 
     ! Get model results:
     procedure :: get_potential => run_potential_model
-    procedure :: get_aurora => run_aurora_model
+    procedure :: get_aurora => run_aurora_model_electron_diffuse
+    procedure :: get_electron_diffuse_aurora => run_aurora_model_electron_diffuse
+    procedure :: get_electron_mono_aurora => run_aurora_model_electron_mono
+    procedure :: get_electron_wave_aurora => run_aurora_model_electron_wave
+    procedure :: get_ion_diffuse_aurora => run_aurora_model_ion_diffuse
     procedure :: weimer05 => run_weimer05_model
     procedure :: hepmay => run_heppner_maynard_model
     procedure :: fta => run_fta_model
     procedure :: hpi_pem => run_hpi_pem_model
     procedure :: get_polarcap => get_polarcap_results
+    procedure :: ovation_e_diffuse => run_ovation_model_electron_diffuse
 
   end type ieModel
 
@@ -259,6 +265,10 @@ contains
 
       name = 'pem'
       call read_conductance_model(name, this%modelDir, this%iDebugLevel)
+    endif
+
+    if (this%iAurora_ == iOvationPrime_) then
+      call init_newell(this%modelDir, this%iDebugLevel)
     endif
 
   end subroutine initialize
