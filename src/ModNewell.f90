@@ -24,7 +24,8 @@ module ModNewell
 
   integer, parameter :: nMltsNewell = 96
   integer, parameter :: nMlatsNewell = 160
-  real :: dLat = 180.0/nMlatsNewell
+  integer, parameter :: minLat = 50
+  real :: dLat = 80.0/nMlatsNewell ! Only from 50-90, both hemispheres
   real :: dMLT = 24.0/nMltsNewell
   real, dimension(nMlatsNewell) :: MlatsNewell
   real, dimension(nMltsNewell) :: MltsNewell
@@ -653,8 +654,13 @@ contains
     integer :: iMlt
     integer :: iLat
 
+    if (abs(lat) < minLat) then
+      eFluxOut = 0.0
+      AveEOut = 2.0
+      return
+    endif
     iMlt = int(mlt/dMlt) + 1
-    iLat = int((90 + lat)/dLat) + 1
+    iLat = int((abs(lat) - minLat)/dLat) + 1
 
     eFluxOut = ElectronEFluxDiffuse(imlt, ilat)
     aveEout = ElectronAvgEnergyDiffuse(iMlt, iLat)
@@ -671,13 +677,16 @@ contains
     integer :: iMlt
     integer :: iLat
 
+    if (abs(lat) < minLat) then
+      eFluxOut = 0.0
+      AveEOut = 2.0
+      return
+    endif
     iMlt = int(mlt/dMlt) + 1
-    iLat = int((90 + lat)/dLat) + 1
+    iLat = int((abs(lat) - minLat)/dLat) + 1
 
-    eFluxOut = ElectronEFluxMono(iMlt, iLat)
-
-    AveEOut = ElectronAvgEnergyMono(iMlt, iLat)
-
+    eFluxOut = ElectronEFluxMono(imlt, ilat)
+    aveEout = ElectronAvgEnergyMono(iMlt, iLat)
     return
 
   end subroutine get_newell_electron_mono
@@ -691,12 +700,16 @@ contains
     integer :: iMlt
     integer :: iLat
 
+    if (abs(lat) < minLat) then
+      eFluxOut = 0.0
+      AveEOut = 2.0
+      return
+    endif
     iMlt = int(mlt/dMlt) + 1
-    iLat = int((90 + lat)/dLat) + 1
+    iLat = int((abs(lat) - minLat)/dLat) + 1
 
     eFluxOut = ElectronEFluxWave(iMlt, ilat)
     AveEOut = ElectronAvgEnergyWave(iMlt, iLat)
-
     return
 
   end subroutine get_newell_electron_wave
@@ -710,8 +723,14 @@ contains
     integer :: iMlt
     integer :: iLat
 
+    if (abs(lat) < minLat) then
+      ! CHECK THIS #todo
+      eFluxOut = 0.0
+      AveEOut = 2.0
+      return
+    endif
     iMlt = int(mlt/dMlt) + 1
-    iLat = int((90 + lat)/dLat) + 1
+    iLat = int((abs(lat) - minLat)/dLat) + 1
 
     eFluxOut = IonEnergyFlux(imlt, ilat)
     AveEOut = IonAvgEnergy(iMlt, iLat)
