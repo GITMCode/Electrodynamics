@@ -486,13 +486,13 @@ contains
     do i = 1, nMltsFta
       ! bin and interp lbhl in each MLT sector
       emission_en = efs0_l(i, :)
-      lats_en = (mlats0_l(i, :) + mlats0_s(i,:)) / 2.0
+      lats_en = mlats0_l(i,:)
       call interp_to_lat_grid(lats_en, emission_en, emission_lat)
       lbhl(i, :) = emission_lat
 
       ! bin and interp lbhs in each MLT sector
       emission_en = efs0_s(i, :)
-      lats_en = (mlats0_l(i,:) + mlats0_s(i, :)) / 2.0
+      lats_en = mlats0_s(i,:)
       call interp_to_lat_grid(lats_en, emission_en, emission_lat)
       lbhs(i, :) = emission_lat
 
