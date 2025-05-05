@@ -41,7 +41,7 @@ module ModNewell
     ElectronNumberFluxDiffuse, ElectronEFluxDiffuse, ElectronAvgEnergyDiffuse, &
     ElectronNumberFluxMono, ElectronEFluxMono, ElectronAvgEnergyMono, &
     ElectronNumberFluxWave, ElectronEFluxWave, ElectronAvgEnergyWave, &
-    IonNumberFlux, IonEnergyFlux, IonAvgEnergy, &
+    IonNumberFlux = 0.0, IonEnergyFlux = 0.0, IonAvgEnergy = 0.0, &
     Area
 
   real, dimension(ndF, nMltsNewell, nMlatsNewell) :: &
@@ -70,14 +70,9 @@ contains
       write(*, *) "reading probability files"
     call read_all_probability_files(dir)
 
-    print *, "Read the files."
     ! This assumes about 500 km altitude and 1/2 deg and 1/4 hour resolution
     area = 120.0*120.0*0.5*3.75
 
-    ! do iLat = 1, nMLats/2 - 1
-    !   area(:, iLat) = area(:, iLat)*cos((50.0 + 0.5*(iLat - 1))*pi/180.0)
-    !   area(:, iLat + nMLats/2) = area(:, iLat)*cos((50.0 + 0.5*(iLat - 1))*pi/180.0)
-    ! enddo
     do iLat = 1, nMlatsNewell/2
       MlatsNewell(iLat) = -(90.0 - 0.5*(iLat - 1))*cPi/180.0
       MlatsNewell(iLat + nMlatsNewell/2) = (50.0 + 0.5*(iLat - 1))*cPi/180.0
@@ -85,8 +80,6 @@ contains
       area(:, iLat) = area(:, iLat)*cos(MlatsNewell(iLat))
       area(:, iLat + nMlatsNewell/2) = area(:, iLat)*cos(MlatsNewell(iLat + nMlatsNewell/2))
     enddo
-    write(*, *) mlatsnewell
-    ! call report("Newell Aurora Initialized", 2)
 
   end subroutine init_newell
 
@@ -198,7 +191,6 @@ contains
 
     ! for removing bad points, we want the zone of consideration to be at
     ! least 2 cells on each side (i.e., 5x5).  For averaging, allow only 1 cell.
-    ! if (UseNewellAveraged_)
     nMin = 1
     ! How many points to average over in Lat and MLT.
     ! Newell is at 1/2 deg resolution in lat, so averaging would be over
@@ -207,8 +199,6 @@ contains
 
     ! Newell is at 1/4 hour MLT, which is 3.75 deg so averaging would be over
     nPM = max(1, floor(360.0/float(nMltsNewell)/3.75/2 + 0.499))
-
-    !    write(*,*) "nPL, nPM in smooth : ", nPL, nPM
 
     valueout = value*0.0
     do iMlt = 1, nMltsNewell
@@ -254,8 +244,6 @@ contains
               ! We only want to kill points that are 2 stdev ABOVE the average
               ! value.
               if (abs(value(iMlt, iLat) - ave) > 2*std) then
-                !write(*,*) "ave : ", valueout(iMlt,iLat), ave, &
-                !   std, abs(ave - value(iMlt,iLat)), 2*std
                 valueout(iMlt, iLat) = ave
               else
                 valueout(iMlt, iLat) = value(iMlt, iLat)
@@ -438,10 +426,6 @@ contains
 
     call calc_dfdt(by, bz, vx)
 
-    ! call start_timing("run_newell")
-
-    ! if (iBlock == 1) then
-
     call calc_probability(ProbDiff, B1pDiff, B2pDiff, ProbDiffTotal)
     call calc_probability(ProbMono, B1pMono, B2pMono, ProbMonoTotal)
     call calc_probability(ProbWave, B1pWave, B2pWave, ProbWaveTotal)
@@ -526,76 +510,73 @@ contains
         !  Diffuse Energy Flux  !
         ! ===================== !
 
-        if (eEFluxDiff(iMlt, iMlat) == 0) then
+        ! Add North and South together
+        ElectronEFluxDiffuse(iLon, iLat) = &
+          eEFluxDiff(iMlt, iMlat) + eEFluxDiff(iMlt, iMlat2)
 
-          ! Add North and South together
+        ! If there are values in both hemisphere, then divide by 2
+        if (eEFluxDiff(iMlt, iMlat)* &
+            eEFluxDiff(iMlt, iMlat2) /= 0) then
           ElectronEFluxDiffuse(iLon, iLat) = &
-            eEFluxDiff(iMlt, iMlat) + eEFluxDiff(iMlt, iMlat2)
-
-          ! If there are values in both hemisphere, then divide by 2
-          if (eEFluxDiff(iMlt, iMlat)* &
-              eEFluxDiff(iMlt, iMlat2) /= 0) &
-            ElectronEFluxDiffuse(iLon, iLat) = &
             ElectronEFluxDiffuse(iLon, iLat)/2.0
         else
           ElectronEFluxDiffuse(iLon, iLat) = &
             eEFluxDiff(iMlt, iMlat)
         endif
 
-        ! Diffuse Number Flux
+        ! ===================== !
+        !  Diffuse Number Flux  !
+        ! ===================== !
 
-        if (eNumFluxDiff(iMlt, iMlat) == 0) then
+        ! Add North and South together
+        numflux = &
+          eNumFluxDiff(iMlt, iMlat) + eNumFluxDiff(iMlt, iMlat2)
 
-          ! Add North and South together
-          numflux = &
-            eNumFluxDiff(iMlt, iMlat) + eNumFluxDiff(iMlt, iMlat2)
-
-          ! If there are values in both hemisphere, then divide by 2
-          if (eNumFluxDiff(iMlt, iMlat)* &
-              eNumFluxDiff(iMlt, iMlat2) /= 0) &
-            numflux = numflux/2
-
+        ! If there are values in both hemisphere, then divide by 2
+        if (eNumFluxDiff(iMlt, iMlat)* &
+            eNumFluxDiff(iMlt, iMlat2) /= 0) then
+          numflux = numflux/2
         else
           numflux = eNumFluxDiff(iMlt, iMlat)
         endif
 
         if (numflux /= 0) then
           ElectronAvgEnergyDiffuse(iLon, iLat) = &
-            eAvgEnergyDiff(iLon, iLat)/numflux* &
+            ElectronEFluxDiffuse(iLon, iLat)/numflux* &
             6.242e11/1000.0 ! ergs -> keV
         endif
 
-        ! Mono Energy Flux
+        ! ===================== !
+        !   Mono Energy Flux    !
+        ! ===================== !
 
-        if (eEFluxMono(iMlt, iMlat) == 0) then
+        ! Add North and South together
+        ElectronEFluxMono(iLon, iLat) = &
+          eEFluxMono(iMlt, iMlat) + &
+          eEFluxMono(iMlt, iMlat2)
 
-          ! Add North and South together
+        ! If there are values in both hemisphere, then divide by 2
+        if (eEFluxMono(iMlt, iMlat)* &
+            eEFluxMono(iMlt, iMlat2) /= 0) then
           ElectronEFluxMono(iLon, iLat) = &
-            eEFluxMono(iMlt, iMlat) + &
-            eEFluxMono(iMlt, iMlat2)
-
-          ! If there are values in both hemisphere, then divide by 2
-          if (eEFluxMono(iMlt, iMlat)* &
-              eEFluxMono(iMlt, iMlat2) /= 0) &
-            ElectronEFluxMono(iLon, iLat) = &
             ElectronEFluxMono(iLon, iLat)/2.0
         else
           ElectronEFluxMono(iLon, iLat) = &
             eEFluxMono(iMlt, iMlat)
         endif
 
-        ! Mono Number Flux
+        ! ===================== !
+        !   Mono Number Flux    !
+        ! ===================== !
 
-        if (eNumFluxMono(iMlt, iMlat) == 0) then
+        ! Add North and South together
+        ElectronNumberFluxMono(iLon, iLat) = &
+          eNumFluxMono(iMlt, iMlat) + eNumFluxMono(iMlt, iMlat2)
 
-          ! Add North and South together
+        ! If there are values in both hemisphere, then divide by 2
+        if (eNumFluxMono(iMlt, iMlat)* &
+            eNumFluxMono(iMlt, iMlat2) /= 0) then
           ElectronNumberFluxMono(iLon, iLat) = &
-            eNumFluxMono(iMlt, iMlat) + eNumFluxMono(iMlt, iMlat2)
-
-          ! If there are values in both hemisphere, then divide by 2
-          if (eNumFluxMono(iMlt, iMlat)* &
-              eNumFluxMono(iMlt, iMlat2) /= 0) &
-            ElectronNumberFluxMono(iLon, iLat) = &
             ElectronNumberFluxMono(iLon, iLat)/2.0
 
         else
@@ -603,37 +584,37 @@ contains
             eNumFluxMono(iMlt, iMlat)
         endif
 
-        ! Wave Energy Flux
+        ! ===================== !
+        !   Wave Energy Flux    !
+        ! ===================== !
 
-        if (eEfluxWave(iMlt, iMlat) == 0) then
+        ! Add North and South together
+        ElectronEFluxWave(iLon, iLat) = &
+          eEfluxWave(iMlt, iMlat) + &
+          eEfluxWave(iMlt, iMlat2)
 
-          ! Add North and South together
+        ! If there are values in both hemisphere, then divide by 2
+        if (eEfluxWave(iMlt, iMlat)* &
+            eEfluxWave(iMlt, iMlat2) /= 0) then
           ElectronEFluxWave(iLon, iLat) = &
-            eEfluxWave(iMlt, iMlat) + &
-            eEfluxWave(iMlt, iMlat2)
-
-          ! If there are values in both hemisphere, then divide by 2
-          if (eEfluxWave(iMlt, iMlat)* &
-              eEfluxWave(iMlt, iMlat2) /= 0) &
-            ElectronEFluxWave(iLon, iLat) = &
             ElectronEFluxWave(iLon, iLat)/2.0
         else
           ElectronEFluxWave(iLon, iLat) = &
             eEfluxWave(iMlt, iMlat)
         endif
 
-        ! Wave Number Flux
+        ! ===================== !
+        !   Wave Number Flux    !
+        ! ===================== !
 
-        if (eNumFluxWave(iMlt, iMlat) == 0) then
+        ! Add North and South together
+        ElectronNumberFluxWave(iLon, iLat) = &
+          eNumFluxWave(iMlt, iMlat) + eNumFluxWave(iMlt, iMlat2)
 
-          ! Add North and South together
+        ! If there are values in both hemisphere, then divide by 2
+        if (eNumFluxWave(iMlt, iMlat)* &
+            eNumFluxWave(iMlt, iMlat2) /= 0) then
           ElectronNumberFluxWave(iLon, iLat) = &
-            eNumFluxWave(iMlt, iMlat) + eNumFluxWave(iMlt, iMlat2)
-
-          ! If there are values in both hemisphere, then divide by 2
-          if (eNumFluxWave(iMlt, iMlat)* &
-              eNumFluxWave(iMlt, iMlat2) /= 0) &
-            ElectronNumberFluxWave(iLon, iLat) = &
             ElectronNumberFluxWave(iLon, iLat)/2.0
 
         else
@@ -724,7 +705,6 @@ contains
     integer :: iLat
 
     if (abs(lat) < minLat) then
-      ! CHECK THIS #todo
       eFluxOut = 0.0
       AveEOut = 2.0
       return
