@@ -233,6 +233,52 @@
     return
   end subroutine run_aurora_model_electron_diffuse
 
+  subroutine run_aurora_model_electron_mono(ie, eflux, avee)
+    ! At the moment, this only works for ovation...
+
+    class(ieModel) :: ie
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: eFlux
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: AveE
+    integer :: iError = 0
+
+    if (.not. ie%isAuroraUpdated) then
+      call run_aurora_model(ie)
+      ie%isAuroraUpdated = .true.
+    endif
+
+    eFlux = 0.001 ! ergs/cm2/s
+    AveE = 1.0 ! keV
+
+    if (ie%iAurora_ == iOvationPrime_) call ie%ovation_e_mono(eFlux, AveE)
+
+    return
+  end subroutine run_aurora_model_electron_mono
+
+  subroutine run_aurora_model_electron_wave(ie, eflux, avee)
+    ! At the moment, this only works for ovation...
+
+    class(ieModel) :: ie
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: eFlux
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: AveE
+    integer :: iError = 0
+
+    if (.not. ie%isAuroraUpdated) then
+      call run_aurora_model(ie)
+      ie%isAuroraUpdated = .true.
+    endif
+
+    eFlux = 0.001 ! ergs/cm2/s
+    AveE = 1.0 ! keV
+
+    if (ie%iAurora_ == iOvationPrime_) call ie%ovation_e_wave(eFlux, AveE)
+
+    return
+  end subroutine run_aurora_model_electron_wave
+
   ! ------------------------------------------------------------
   ! These functions are for getting information that was
   ! derived when the auroral model was run
@@ -346,7 +392,7 @@
 
   end subroutine run_ovation_model_electron_diffuse
 
-  subroutine run_aurora_model_electron_mono(ie, eflux, avee)
+  subroutine run_ovation_model_electron_mono(ie, eflux, avee)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(out) :: eFlux
@@ -369,9 +415,9 @@
 
     return
 
-  end subroutine run_aurora_model_electron_mono
+  end subroutine run_ovation_model_electron_mono
 
-  subroutine run_aurora_model_electron_wave(ie, eflux, avee)
+  subroutine run_ovation_model_electron_wave(ie, eflux, avee)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(out) :: eFlux
@@ -393,9 +439,9 @@
     enddo
 
     return
-  end subroutine run_aurora_model_electron_wave
+  end subroutine run_ovation_model_electron_wave
 
-  subroutine run_aurora_model_ion_diffuse(ie, eflux, avee)
+  subroutine run_ovation_model_ion_diffuse(ie, eflux, avee)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(out) :: eFlux
@@ -418,4 +464,4 @@
 
     return
 
-  end subroutine run_aurora_model_ion_diffuse
+  end subroutine run_ovation_model_ion_diffuse
