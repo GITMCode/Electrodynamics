@@ -38,9 +38,9 @@ module ModNewell
     B1aWave, B2aWave, B1aWaven, B2aWaven, rFaWave, rFaWaven, B1pWave, B2pWave, &
     B1aIons, B2aIons, B1aIonsn, B2aIonsn, rFaIons, rFaIonsn, &
     ProbDiffTotal, ProbMonoTotal, ProbWaveTotal, ProbIonsTotal, &
-    ElectronNumberFluxDiffuse, ElectronEFluxDiffuse, ElectronAvgEnergyDiffuse, &
-    ElectronNumberFluxMono, ElectronEFluxMono, ElectronAvgEnergyMono, &
-    ElectronNumberFluxWave, ElectronEFluxWave, ElectronAvgEnergyWave, &
+    ElectronEFluxDiffuse, ElectronAvgEnergyDiffuse, &
+    ElectronEFluxMono, ElectronAvgEnergyMono, &
+    ElectronEFluxWave, ElectronAvgEnergyWave, &
     IonNumberFlux = 0.0, IonEnergyFlux = 0.0, IonAvgEnergy = 0.0, &
     Area
 
@@ -525,12 +525,11 @@ contains
         endif
 
         ! ===================== !
-        !  Diffuse Number Flux  !
+        !  Diffuse Avg Energy   !
         ! ===================== !
 
         ! Add North and South together
-        numflux = &
-          eNumFluxDiff(iMlt, iMlat) + eNumFluxDiff(iMlt, iMlat2)
+        numflux = eNumFluxDiff(iMlt, iMlat) + eNumFluxDiff(iMlt, iMlat2)
 
         ! If there are values in both hemisphere, then divide by 2
         if (eNumFluxDiff(iMlt, iMlat)* &
@@ -566,22 +565,24 @@ contains
         endif
 
         ! ===================== !
-        !   Mono Number Flux    !
+        !    Mono Avg Energy    !
         ! ===================== !
 
         ! Add North and South together
-        ElectronNumberFluxMono(iLon, iLat) = &
-          eNumFluxMono(iMlt, iMlat) + eNumFluxMono(iMlt, iMlat2)
+        numflux = eNumFluxMono(iMlt, iMlat) + eNumFluxMono(iMlt, iMlat2)
 
         ! If there are values in both hemisphere, then divide by 2
         if (eNumFluxMono(iMlt, iMlat)* &
             eNumFluxMono(iMlt, iMlat2) /= 0) then
-          ElectronNumberFluxMono(iLon, iLat) = &
-            ElectronNumberFluxMono(iLon, iLat)/2.0
-
+          numflux = numflux/2.0
         else
-          ElectronNumberFluxMono(iLon, iLat) = &
-            eNumFluxMono(iMlt, iMlat)
+          numflux = eNumFluxMono(iMlt, iMlat)
+        endif
+
+        if (numflux /= 0) then
+          ElectronAvgEnergyMono(iLon, iLat) = &
+            ElectronEFluxMono(iLon, iLat)/numflux* &
+            6.242e11/1000.0 ! ergs -> keV
         endif
 
         ! ===================== !
@@ -604,22 +605,24 @@ contains
         endif
 
         ! ===================== !
-        !   Wave Number Flux    !
+        !    Wave Avg Energy    !
         ! ===================== !
 
         ! Add North and South together
-        ElectronNumberFluxWave(iLon, iLat) = &
-          eNumFluxWave(iMlt, iMlat) + eNumFluxWave(iMlt, iMlat2)
+        numflux = eNumFluxWave(iMlt, iMlat) + eNumFluxWave(iMlt, iMlat2)
 
         ! If there are values in both hemisphere, then divide by 2
         if (eNumFluxWave(iMlt, iMlat)* &
             eNumFluxWave(iMlt, iMlat2) /= 0) then
-          ElectronNumberFluxWave(iLon, iLat) = &
-            ElectronNumberFluxWave(iLon, iLat)/2.0
-
+          numflux = numflux/2.0
         else
-          ElectronNumberFluxWave(iLon, iLat) = &
-            eNumFluxWave(iMlt, iMlat)
+          numflux = eNumFluxWave(iMlt, iMlat)
+        endif
+
+        if (numflux /= 0) then
+          ElectronAvgEnergyWave(iLon, iLat) = &
+            ElectronEFluxWave(iLon, iLat)/numflux* &
+            6.242e11/1000.0 ! ergs -> keV
         endif
       enddo
     enddo
