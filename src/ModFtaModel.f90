@@ -7,7 +7,7 @@ module ModFTAModel
 
   integer, parameter :: iCharLenFta_ = iCharLenIE_
   integer, parameter :: iCharLenLong_ = 1500
-  character(len=iCharLenFta_) :: dir = "UA/inputs/ext/ie/FTA/"
+  character(len=iCharLenFta_) :: dir = "UA/DataIn/Aurora/FTA/"
   logical :: isInitialized = .false.
   logical :: isOkFta = .true.
 
