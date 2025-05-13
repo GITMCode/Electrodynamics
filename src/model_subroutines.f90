@@ -395,9 +395,9 @@
   subroutine run_ovation_model_electron_mono(ie, eflux, avee)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: eFlux
+                    ie%neednLats), intent(inout) :: eFlux
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: AveE
+                    ie%neednLats), intent(inout) :: AveE
 
     real :: eFluxVal, AveEVal, hp
     integer :: iError = 0, iMlt, iLat
@@ -420,9 +420,9 @@
   subroutine run_ovation_model_electron_wave(ie, eflux, avee)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: eFlux
+                    ie%neednLats), intent(inout) :: eFlux
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: AveE
+                    ie%neednLats), intent(inout) :: AveE
 
     real :: eFluxVal, AveEVal, hp
     integer :: iError = 0, iMlt, iLat
@@ -444,9 +444,9 @@
   subroutine run_ovation_model_ion_diffuse(ie, eflux, avee)
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: eFlux
+                    ie%neednLats), intent(inout) :: eFlux
     real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: AveE
+                    ie%neednLats), intent(inout) :: AveE
 
     real :: eFluxVal, AveEVal, hp
     integer :: iError = 0, iMlt, iLat
