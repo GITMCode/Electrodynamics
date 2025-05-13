@@ -176,13 +176,10 @@ contains
 
   subroutine smooth(value)
 
-    !   use ModSizeGITM
-    !   use ModInputs
-
     implicit none
 
-    real, dimension(nMltsNewell, nMlatsNewell) :: value, valueout
-    ! integer, intent(in) :: nPtsLat, nPtsLon
+    real, dimension(nMltsNewell, nMlatsNewell), intent(inout) :: value
+    real, dimension(nMltsNewell, nMlatsNewell) :: valueout
 
     integer :: nPL = 2, nPM = 2, nMin = 2
     integer :: iMlt, iLat, iM, iL, n, iMa, iLa, iHem

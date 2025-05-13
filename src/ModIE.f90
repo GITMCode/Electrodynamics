@@ -45,44 +45,44 @@ MODULE ModIE
     integer :: iEfield_ = -1
     integer :: iAurora_ = -1
 
-     character (len = iCharLenIE_) :: modelDir = "data/ext/"
-     character (len = iCharLenIE_) :: modelDirFta = "FTA/"     
-     character (len = iCharLenIE_) :: northFile = "none"
-     character (len = iCharLenIE_) :: southFile = "none"
-     
-     ! ----------------------------------------------------------------
-     ! These are the states that the models has, if we either read in
-     ! a file or we are coupling to some other model.
-     ! They are 3D, because there is latitude, local time, and block,
-     ! where block can be north/south or whatever.
-     ! ----------------------------------------------------------------
-     integer :: havenLats = 0
-     integer :: havenMLTs = 0
-     integer :: havenBLKs = 0
-     real, allocatable, dimension(:,:,:) :: haveLats
-     real, allocatable, dimension(:,:,:) :: haveMLTs
-     ! Field-aligned Currents:
-     real, allocatable, dimension(:,:,:) :: haveFac
-     ! Potentials:
-     real, allocatable, dimension(:,:,:) :: havePotential
-     ! Electron diffuse:
-     real, allocatable, dimension(:,:) :: haveDiffuseEeFlux
-     real, allocatable, dimension(:,:) :: haveDiffuseEAveE
-     ! Ion diffuse:
-     real, allocatable, dimension(:,:) :: haveDiffuseIeFlux
-     real, allocatable, dimension(:,:) :: haveDiffuseIAveE
-     ! Discrete or Monoenergetic:
-     real, allocatable, dimension(:,:) :: haveMonoEeFlux
-     real, allocatable, dimension(:,:) :: haveMonoEAveE
-     ! Broadband or Wave-drive:
-     real, allocatable, dimension(:,:) :: haveWaveEeFlux
-     real, allocatable, dimension(:,:) :: haveWaveEAveE
-     ! Is Polar Cap (1 if is polar cap, 0 otherwise):
-     real, allocatable, dimension(:,:) :: havePolarCap
-     
-     ! ----------------------------------------------------------------
-     ! These are what the code that is calling this library needs
-     ! ----------------------------------------------------------------
+    character(len=iCharLenIE_) :: modelDir = "data/ext/"
+    character(len=iCharLenIE_) :: modelDirFta = "FTA/"
+    character(len=iCharLenIE_) :: northFile = "none"
+    character(len=iCharLenIE_) :: southFile = "none"
+
+    ! ----------------------------------------------------------------
+    ! These are the states that the models has, if we either read in
+    ! a file or we are coupling to some other model.
+    ! They are 3D, because there is latitude, local time, and block,
+    ! where block can be north/south or whatever.
+    ! ----------------------------------------------------------------
+    integer :: havenLats = 0
+    integer :: havenMLTs = 0
+    integer :: havenBLKs = 0
+    real, allocatable, dimension(:, :, :) :: haveLats
+    real, allocatable, dimension(:, :, :) :: haveMLTs
+    ! Field-aligned Currents:
+    real, allocatable, dimension(:, :, :) :: haveFac
+    ! Potentials:
+    real, allocatable, dimension(:, :, :) :: havePotential
+    ! Electron diffuse:
+    real, allocatable, dimension(:, :) :: haveDiffuseEeFlux
+    real, allocatable, dimension(:, :) :: haveDiffuseEAveE
+    ! Ion diffuse:
+    real, allocatable, dimension(:, :) :: haveDiffuseIeFlux
+    real, allocatable, dimension(:, :) :: haveDiffuseIAveE
+    ! Discrete or Monoenergetic:
+    real, allocatable, dimension(:, :) :: haveMonoEeFlux
+    real, allocatable, dimension(:, :) :: haveMonoEAveE
+    ! Broadband or Wave-drive:
+    real, allocatable, dimension(:, :) :: haveWaveEeFlux
+    real, allocatable, dimension(:, :) :: haveWaveEAveE
+    ! Is Polar Cap (1 if is polar cap, 0 otherwise):
+    real, allocatable, dimension(:, :) :: havePolarCap
+
+    ! ----------------------------------------------------------------
+    ! These are what the code that is calling this library needs
+    ! ----------------------------------------------------------------
 
     integer :: neednLats = 0
     integer :: neednMLTs = 0
@@ -183,8 +183,8 @@ MODULE ModIE
     procedure :: hpi_pem => run_hpi_pem_model
     procedure :: get_polarcap => get_polarcap_results
     procedure :: ovation_e_diffuse => run_ovation_model_electron_diffuse
-    procedure :: ovation_e_mono => run_ovation_model_electron_diffuse
-    procedure :: ovation_e_wave => run_ovation_model_electron_diffuse
+    procedure :: ovation_e_mono => run_ovation_model_electron_mono
+    procedure :: ovation_e_wave => run_ovation_model_electron_wave
 
   end type ieModel
 
@@ -309,7 +309,7 @@ contains
 
     this%isAuroraUpdated = .false.
     this%isPotentialUpdated = .false.
-    
+
     ! Now, do some updating of different model parameters if needed:
 
     if (this%iEfield_ == iWeimer05_) then

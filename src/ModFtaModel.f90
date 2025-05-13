@@ -57,7 +57,7 @@ contains
     if (abs(lat) < minLat) then
       eFluxOut = 0.0
       AveEOut = 2.0
-       polarCapOut = 0.0
+      polarCapOut = 0.0
       return
     endif
     iMlt = int(mlt/dMlt) + 1
@@ -82,10 +82,10 @@ contains
     real :: au, al, ae, gMlat, mindist
     character(len=10) :: emis_type
 
-     real, dimension(nMltsFta, nEnergies) :: mlats0_l, efs0_l, mlats0_s, efs0_s 
-     real, dimension(nMltsFta, nLatsFta) :: lbhl, lbhs, avee, eflux, polarcap
-    
-     iError = 0
+    real, dimension(nMltsFta, nEnergies) :: mlats0_l, efs0_l, mlats0_s, efs0_s
+    real, dimension(nMltsFta, nLatsFta) :: lbhl, lbhs, avee, eflux, polarcap
+
+    iError = 0
 
     if (.not. isInitialized) then
       call initialize_fta(dir)
@@ -100,19 +100,19 @@ contains
     au = IOr_NeedAU
     al = IOr_NeedAL
 
-     ! -----------------------------------------------------------------------
-     ! Limits of FTA model: If AL is greater (less) than -25 (-1200)
-     ! nT, AL is equal to -25 (-1200) nT; If AU is less than 25 nT or
-     ! 0.12*|AL|, AU is equal to the larger value of them; If AU is
-     ! greater than 400 nT, AU is equal to 400 nT.
-     ! -----------------------------------------------------------------------
+    ! -----------------------------------------------------------------------
+    ! Limits of FTA model: If AL is greater (less) than -25 (-1200)
+    ! nT, AL is equal to -25 (-1200) nT; If AU is less than 25 nT or
+    ! 0.12*|AL|, AU is equal to the larger value of them; If AU is
+    ! greater than 400 nT, AU is equal to 400 nT.
+    ! -----------------------------------------------------------------------
 
-     if (al > -25.0) al = -25.0
-     !if (al < -1200.0) al = -1200.0
-     !if (au < 0.12*abs(al)) au = 0.12*abs(al)
-     if (au < 25.0) au = 25.0
-     !if (au > 400.0) au = 400.0
-     ae = au - al
+    if (al > -25.0) al = -25.0
+    !if (al < -1200.0) al = -1200.0
+    !if (au < 0.12*abs(al)) au = 0.12*abs(al)
+    if (au < 25.0) au = 25.0
+    !if (au > 400.0) au = 400.0
+    ae = au - al
 
     emis_type = 'lbhl'
     call calc_emission_pattern(au, al, emis_type, mlats0_l, efs0_l)
@@ -127,7 +127,7 @@ contains
     LBHSResult = lbhs
     eFluxResult = eflux
     AveEResult = avee
-     polarCapResult = polarcap
+    polarCapResult = polarcap
 
   end subroutine update_fta_model
 
@@ -486,21 +486,21 @@ contains
     do i = 1, nMltsFta
       ! bin and interp lbhl in each MLT sector
       emission_en = efs0_l(i, :)
-      lats_en = mlats0_l(i,:)
+      lats_en = mlats0_l(i, :)
       call interp_to_lat_grid(lats_en, emission_en, emission_lat)
       lbhl(i, :) = emission_lat
 
       ! bin and interp lbhs in each MLT sector
       emission_en = efs0_s(i, :)
-      lats_en = mlats0_s(i,:)
+      lats_en = mlats0_s(i, :)
       call interp_to_lat_grid(lats_en, emission_en, emission_lat)
       lbhs(i, :) = emission_lat
 
-       polarcap1d = 0.0
-       where (lats_fixed_grid > lats_en(nEnergies))
-          polarcap1d = 1.0
-       endwhere
-       polarcap(i,:) = polarcap1d
+      polarcap1d = 0.0
+      where (lats_fixed_grid > lats_en(nEnergies))
+        polarcap1d = 1.0
+      end where
+      polarcap(i, :) = polarcap1d
     enddo
 
     eflux = lbhl/110.0
