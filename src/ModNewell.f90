@@ -468,21 +468,15 @@ contains
     where (iNumFlux > 5.0e8) iNumFlux = 0.0
     where (iNumFlux > 1.0e8) iNumFlux = 1.0e8
 
-    ! GITM only called smooth & calc_hp
-    ! if (DoNewellRemoveSpikes_ .or. UseNewellAveraged_)
+    ! GITM only called smooth if (DoNewellRemoveSpikes_ .or. UseNewellAveraged_)
     ! We will always do it.
 
-    call calc_hp(eEFluxDiff, hps, hpn)
     call smooth(eEFluxDiff)
     call smooth(eNumFluxDiff)
-    call calc_hp(eEFluxDiff, hps, hpn)
 
-    call calc_hp(eEFluxMono, hps, hpn)
     call smooth(eEFluxMono)
     call smooth(eNumFluxMono)
-    call calc_hp(eEFluxMono, hps, hpn)
 
-    call calc_hp(eEfluxWave, hps, hpn)
     call smooth(eEfluxWave)
     call smooth(eNumFluxWave)
 
