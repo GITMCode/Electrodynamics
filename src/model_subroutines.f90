@@ -279,6 +279,29 @@
     return
   end subroutine run_aurora_model_electron_wave
 
+  subroutine run_aurora_model_ion_diffuse(ie, eflux, avee)
+    ! At the moment, this only works for ovation...
+
+    class(ieModel) :: ie
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: eFlux
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: AveE
+    integer :: iError = 0
+
+    if (.not. ie%isAuroraUpdated) then
+      call run_aurora_model(ie)
+      ie%isAuroraUpdated = .true.
+    endif
+
+    eFlux = 0.001 ! ergs/cm2/s
+    AveE = 10.0 ! keV
+
+    if (ie%iAurora_ == iOvationPrime_) call ie%ovation_ion_diffuse(eFlux, AveE)
+
+    return
+  end subroutine run_aurora_model_ion_diffuse
+
   ! ------------------------------------------------------------
   ! These functions are for getting information that was
   ! derived when the auroral model was run

@@ -176,7 +176,7 @@ MODULE ModIE
     procedure :: get_electron_diffuse_aurora => run_aurora_model_electron_diffuse
     procedure :: get_electron_mono_aurora => run_aurora_model_electron_mono
     procedure :: get_electron_wave_aurora => run_aurora_model_electron_wave
-    ! procedure :: get_ion_diffuse_aurora => run_aurora_model_ion_diffuse
+    procedure :: get_ion_diffuse_aurora => run_aurora_model_ion_diffuse
     procedure :: weimer05 => run_weimer05_model
     procedure :: hepmay => run_heppner_maynard_model
     procedure :: fta => run_fta_model
@@ -185,6 +185,7 @@ MODULE ModIE
     procedure :: ovation_e_diffuse => run_ovation_model_electron_diffuse
     procedure :: ovation_e_mono => run_ovation_model_electron_mono
     procedure :: ovation_e_wave => run_ovation_model_electron_wave
+    procedure :: ovation_ion_diffuse => run_ovation_model_ion_diffuse
 
   end type ieModel
 

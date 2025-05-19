@@ -615,6 +615,45 @@ contains
             ElectronEFluxWave(iLon, iLat)/numflux* &
             6.242e11/1000.0 ! ergs -> keV
         endif
+
+        ! ===================== !
+        !   Ion Energy Flux     !
+        ! ===================== !
+
+        ! Add North and South together
+        IonEnergyFlux(iLon, iLat) = &
+          iEFlux(iMlt, iMlat) + iEFlux(iMlt, iMlat2)
+
+        ! If there are values in both hemisphere, then divide by 2
+        if (iEflux(iMlt, iMlat)* &
+            iEflux(iMlt, iMlat2) /= 0) then
+          IonEnergyFlux(iLon, iLat) = &
+            IonEnergyFlux(iLon, iLat)/2.0
+        else
+          IonEnergyFlux(iLon, iLat) = &
+            iEflux(iMlt, iMlat)
+        endif
+
+        ! ===================== !
+        !   Ion Avg Energy      !
+        ! ===================== !
+
+        ! Add North and South together
+        numflux = iNumFlux(iMlt, iMlat) + iNumFlux(iMlt, iMlat2)
+
+        ! If there are values in both hemisphere, then divide by 2
+        if (iNumFlux(iMlt, iMlat)* &
+            iNumFlux(iMlt, iMlat2) /= 0) then
+          numflux = numflux/2
+        else
+          numflux = iNumFlux(iMlt, iMlat)
+        endif
+
+        if (numflux /= 0) then
+          IonAvgEnergy(iLon, iLat) = &
+            IonEnergyFlux(iLon, iLat)/numflux* &
+            6.242e11/1000.0 ! ergs -> keV
+        endif
       enddo
     enddo
 
