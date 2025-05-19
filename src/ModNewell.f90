@@ -25,8 +25,8 @@ module ModNewell
   integer, parameter :: nMltsNewell = 96
   integer, parameter :: nMlatsNewell = 160
   integer, parameter :: minLat = 50
-  real :: dLat = 80.0/nMlatsNewell ! Only from 50-90, both hemispheres
-  real :: dMLT = 24.0/nMltsNewell
+  real :: dlat_newell = 80.0/nMlatsNewell ! Only from 50-90, both hemispheres
+  real :: dmlt_newell = 24.0/nMltsNewell
   real, dimension(nMlatsNewell) :: MlatsNewell
   real, dimension(nMltsNewell) :: MltsNewell
   integer, parameter :: nProbs = 3
@@ -162,18 +162,6 @@ contains
 
   ! -------------------------------------------------------------------
 
-  subroutine calc_hp(value, outs, outn)
-
-    real, dimension(nMltsNewell, nMlatsNewell), intent(in) :: value
-    real, intent(out) :: outs, outn
-
-    outs = sum(value(:, 1:nMlatsNewell/2 - 1)*Area(:, 1:nMlatsNewell/2 - 1))
-    outn = sum(value(:, nMlatsNewell/2:nMlatsNewell)*Area(:, nMlatsNewell/2:nMlatsNewell))
-
-  end subroutine calc_hp
-
-  ! -------------------------------------------------------------------
-
   subroutine smooth(value)
 
     implicit none
@@ -191,11 +179,11 @@ contains
     nMin = 1
     ! How many points to average over in Lat and MLT.
     ! Newell is at 1/2 deg resolution in lat, so averaging would be over
-    nPL = max(1, floor(180.0/float(nMlatsNewell) + 0.499))
+    ! nPL = max(1, floor(180.0/float(nMlatsNewell) + 0.499))
     ! no *2, because this is for each side
 
     ! Newell is at 1/4 hour MLT, which is 3.75 deg so averaging would be over
-    nPM = max(1, floor(360.0/float(nMltsNewell)/3.75/2 + 0.499))
+    ! nPM = max(1, floor(360.0/float(nMltsNewell)/3.75/2 + 0.499))
 
     valueout = value*0.0
     do iMlt = 1, nMltsNewell
@@ -412,7 +400,7 @@ contains
   subroutine update_newell_model(by, bz, vx)
     real, intent(in) :: by, bz, vx
     integer :: iLon, iLat, iMlat, iMlt, iMlat2
-    real :: numflux, hps, hpn
+    real :: numflux
 
     ! Holds intermediate values
     real, dimension(nMltsNewell, nMlatsNewell) :: &
@@ -673,8 +661,8 @@ contains
       AveEOut = 2.0
       return
     endif
-    iMlt = int(mlt/dMlt) + 1
-    iLat = int((abs(lat) - minLat)/dLat) + 1
+    iMlt = int(mlt/dmlt_newell) + 1
+    iLat = int((abs(lat) - minLat)/dlat_newell) + 1
 
     eFluxOut = ElectronEFluxDiffuse(imlt, ilat)
     aveEout = ElectronAvgEnergyDiffuse(iMlt, iLat)
@@ -696,8 +684,8 @@ contains
       AveEOut = 2.0
       return
     endif
-    iMlt = int(mlt/dMlt) + 1
-    iLat = int((abs(lat) - minLat)/dLat) + 1
+    iMlt = int(mlt/dmlt_newell) + 1
+    iLat = int((abs(lat) - minLat)/dlat_newell) + 1
 
     eFluxOut = ElectronEFluxMono(imlt, ilat)
     aveEout = ElectronAvgEnergyMono(iMlt, iLat)
@@ -719,8 +707,8 @@ contains
       AveEOut = 2.0
       return
     endif
-    iMlt = int(mlt/dMlt) + 1
-    iLat = int((abs(lat) - minLat)/dLat) + 1
+    iMlt = int(mlt/dmlt_newell) + 1
+    iLat = int((abs(lat) - minLat)/dlat_newell) + 1
 
     eFluxOut = ElectronEFluxWave(iMlt, ilat)
     AveEOut = ElectronAvgEnergyWave(iMlt, iLat)
@@ -739,11 +727,11 @@ contains
 
     if (abs(lat) < minLat) then
       eFluxOut = 0.0
-      AveEOut = 2.0
+      AveEOut = 12.0
       return
     endif
-    iMlt = int(mlt/dMlt) + 1
-    iLat = int((abs(lat) - minLat)/dLat) + 1
+    iMlt = int(mlt/dmlt_newell) + 1
+    iLat = int((abs(lat) - minLat)/dlat_newell) + 1
 
     eFluxOut = IonEnergyFlux(imlt, ilat)
     AveEOut = IonAvgEnergy(iMlt, iLat)
