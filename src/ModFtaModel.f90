@@ -17,8 +17,8 @@ module ModFTAModel
 
   ! For interpolation grid:
 
-  integer, parameter :: nLatsFta = 80
-  real, parameter :: minLat = 50.0
+  integer, parameter :: nLatsFta = 120
+  real, parameter :: minLat = 30.0
   real :: dLat = (90.0 - minLat)/nLatsFta
   real :: dMlt = 24.0/nMltsFta
   real, dimension(nLatsFta) :: lats_fixed_grid
@@ -478,7 +478,7 @@ contains
     real, dimension(nMltsFta, nLatsFta), intent(out) :: lbhl, lbhs, avee, eflux
     real, dimension(nMltsFta, nLatsFta), intent(out) :: polarcap
     real, dimension(nLatsFta) :: polarcap1d
-    real, dimension(80):: emission_lat
+    real, dimension(nLatsFta):: emission_lat
     real, dimension(nEnergies) :: emission_en, lats_en
     integer :: i
 
