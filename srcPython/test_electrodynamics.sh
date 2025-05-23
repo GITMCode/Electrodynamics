@@ -1,15 +1,5 @@
 #!/bin/sh
 
-python3 ./electrodynamics_write.py -outfile=tcvs_n.bin -tcv
-python3 ./electrodynamics_write.py -outfile=notcvs_n.bin
-python3 ./electrodynamics_write.py -outfile=tcvs_s.bin -south
-
-python3 ./amie_read_binary.py -step=10 tcvs_n.bin
-python3 ./amie_read_binary.py -step=10 notcvs_n.bin
-python3 ./amie_read_binary.py -step=10 tcvs_s.bin
-
-exit
-
 ## test the electrodynamics.
 #./electrodynamics_write.py -startdate=20110320 -enddate=20110321 -dt=60 -real -outfile=b20110320n_omni.bin
 #./amie_read_binary.py -step=1 b20110320n_omni.bin
