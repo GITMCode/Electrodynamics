@@ -501,7 +501,7 @@ contains
     implicit none
 
     class(amieFile) :: this
-    integer :: iError = 0, iVar, i
+    integer :: iError = 0, iVar, i, tmp_amiepos
     real*4, allocatable, dimension(:) :: TempLats
 
     if (AMIE_iDebugLevel > 1) &
@@ -632,16 +632,17 @@ contains
     ! this % headerLength = ftell(iUnitAmie_)
 
     ! ALB coming here and changing things. `ftell` doesn't work with nagfor, but the
-         !! "easy" replacement with this doesn't seem to be working either. So this block
-         !! can probably be deleted.
+    !! "easy" replacement with this doesn't seem to be working either. So this block
+    !! can probably be deleted.
     ! INQUIRE(UNIT=iUnitAmie_, RECL=i) !get record length (header size)
     ! write(*,*) "===>> Found Header length: ", i
     ! this % headerLength = i
-         !! Or use this to get the index of next record  (breaks when there are multiple times):
+    !! Or use this to get the index of next record  (breaks when there are multiple times):
     ! INQUIRE(UNIT=iUnitAmie_, NEXTREC=i) !get next record
 
+    call ftell(iUnitAmie_, tmp_amiepos)
     if (AMIE_iDebugLevel > 2) &
-      write(*, *) 'current file position : ', ftell(iUnitAmie_)
+      write(*, *) 'current file position : ', tmp_amiepos
 
     this%oneTimeLength = &
       6*4 + 8 + &
