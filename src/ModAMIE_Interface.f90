@@ -504,6 +504,10 @@ contains
     integer :: iError = 0, iVar, i, tmp_amiepos
     real*4, allocatable, dimension(:) :: TempLats
 
+    character(len=5000) :: line
+    integer(4) recl_at_start, recl_at_end, nLinesInHeader, iLine
+    CHARACTER*32 MSG
+
     if (AMIE_iDebugLevel > 1) &
       write(*, *) "==> Opening AMIE file to read header : ", trim(this%fileName)
 
@@ -548,7 +552,7 @@ contains
     read(iUnitAmie_) this%nVars
     do iVar = 1, this%nVars
       read(iUnitAmie_) this%varNames(iVar)
-      if (AMIE_iDebugLevel > 2) &
+      if (AMIE_iDebugLevel > 0) &
         write(*, *) "==> AMIE Variable : ", iVar, this%varNames(iVar)
     enddo
 
@@ -634,15 +638,55 @@ contains
     ! ALB coming here and changing things. `ftell` doesn't work with nagfor, but the
     !! "easy" replacement with this doesn't seem to be working either. So this block
     !! can probably be deleted.
-    ! INQUIRE(UNIT=iUnitAmie_, RECL=i) !get record length (header size)
-    ! write(*,*) "===>> Found Header length: ", i
+    !INQUIRE(UNIT=iUnitAmie_, RECL=i) !get record length (header size)
+    !write(*,*) "===>> Found Header length: ", i
     ! this % headerLength = i
     !! Or use this to get the index of next record  (breaks when there are multiple times):
     ! INQUIRE(UNIT=iUnitAmie_, NEXTREC=i) !get next record
 
     call ftell(iUnitAmie_, tmp_amiepos)
-    if (AMIE_iDebugLevel > 2) &
-      write(*, *) 'current file position : ', tmp_amiepos
+    if (AMIE_iDebugLevel >= 1) &
+      write(*, *) ' --> current AMIE file position (ftell) : ', tmp_amiepos
+
+    close(iUnitAmie_)
+
+
+    if (tmp_amiepos <= 0) then
+      ! ftell doesn't seem to work on all systems. So, try this instead:
+      !! Try this the hard way:
+      open(iUnitAmie_, &
+           file=this%fileName, &
+           action='read', &
+           access='stream', &
+           iomsg = msg, &
+           iostat=iError)
+
+      nLinesInHeader = 4 + this%nVars
+
+      tmp_amiepos = 0
+      do iLine = 1, nLinesInHeader
+        read(iUnitAmie_) recl_at_start
+        read(iUnitAmie_) line(1:recl_at_start)
+        read(iUnitAmie_) recl_at_end
+        tmp_amiepos = tmp_amiepos + recl_at_start + 4 + 4
+      enddo
+
+      if (AMIE_iDebugLevel >= 1) &
+        write(*,*) ' --> tmp_amiepos, the hard way : ', tmp_amiepos
+
+      close(iUnitAmie_)
+    endif
+
+    if (tmp_amiepos .ne. this%headerLength) then
+      if (AMIE_iDebugLevel > -1) then
+        write(*,*) 'WARNING ---->>>> AMIE file header length is strange!'
+        write(*,*) '   header length : ', this%headerLength
+        write(*,*) '   tmp_amiepos : ', tmp_amiepos
+        write(*,*) '   -> forcing length to actual instead of calculated!'
+        write(*,*) '   -> if code dies, then complain to Aaron!'
+      endif
+      this%headerLength = tmp_amiepos
+    endif
 
     this%oneTimeLength = &
       6*4 + 8 + &
@@ -652,8 +696,6 @@ contains
     this%nTimesGoal = nMaxSize/(this%nMlts*this%nLats*nValues)
     if (AMIE_iDebugLevel > 2) &
       write(*, *) "==> AMIE nTimesGoals : ", this%nTimesGoal
-
-    close(iUnitAmie_)
 
   end subroutine read_amie_header
 
