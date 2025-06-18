@@ -8,9 +8,11 @@ ALL:
 	@cd src/main; make TEST
 
 cleanall:
+	@echo "--> Cleaning Electrodynamics"
 	rm -f lib/*.a
-	@cd src; make clean
-	@cd src/main; make clean
+	cd src; make clean
+	cd src/main; make clean
+	@echo "--> Done Cleaning Electrodynamics"
 
 rundir:
 	rm -rf run
