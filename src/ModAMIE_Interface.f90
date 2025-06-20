@@ -31,7 +31,8 @@ Module ModAMIE_Interface
   integer, parameter :: iEle_mono_avee_ = 8
   integer, parameter :: iEle_wave_eflux_ = 9
   integer, parameter :: iEle_wave_avee_ = 10
-  integer, parameter :: nValues = 10
+  integer, parameter :: iPolarCap_ = 11
+  integer, parameter :: nValues = 11
 
   ! This is the maximum size of the memory we want to take, so we
   ! don't run out of memory (this is equivalent to a course grid at
@@ -116,6 +117,30 @@ Module ModAMIE_Interface
   real*4, allocatable, dimension(:, :, :, :, :) :: AMIE_Storage
 
 contains
+
+  ! --------------------------------------------------------------------
+  ! These are the names of the variables we will be looking for
+  ! in the AMIE input files.  If you want to use these types of
+  ! aurora, you need to use these names for the variables!
+  ! --------------------------------------------------------------------
+
+  subroutine AMIE_link_variable_names()
+
+    implicit none
+
+    AMIE_Names(iPotential_) = "Potential"
+    AMIE_Names(iPotentialy_) = "PotentialY"
+    AMIE_Names(iEle_diff_eflux_) = "Electron Energy Flux"
+    AMIE_Names(iEle_diff_avee_) = "Electron Mean Energy"
+    AMIE_Names(iIon_diff_eflux_) = "Ion Energy Flux"
+    AMIE_Names(iIon_diff_avee_) = "Ion Mean Energy"
+    AMIE_Names(iEle_mono_eflux_) = "ME Energy Flux"
+    AMIE_Names(iEle_mono_avee_) = "ME Mean Energy"
+    AMIE_Names(iEle_wave_eflux_) = "BB Energy Flux"
+    AMIE_Names(iEle_wave_avee_) = "BB Mean Energy"
+    AMIE_Names(iPolarCap_) = "Polar Cap Indicator"
+
+  end subroutine AMIE_link_variable_names
 
   ! --------------------------------------------------------------------
   ! Initialize file
@@ -752,29 +777,6 @@ contains
   end subroutine initialize_amie_files
 
   ! --------------------------------------------------------------------
-  ! These are the names of the variables we will be looking for
-  ! in the AMIE input files.  If you want to use these types of
-  ! aurora, you need to use these names for the variables!
-  ! --------------------------------------------------------------------
-
-  subroutine AMIE_link_variable_names()
-
-    implicit none
-
-    AMIE_Names(iPotential_) = "Potential"
-    AMIE_Names(iPotentialy_) = "PotentialY"
-    AMIE_Names(iEle_diff_eflux_) = "Electron Energy Flux"
-    AMIE_Names(iEle_diff_avee_) = "Electron Mean Energy"
-    AMIE_Names(iIon_diff_eflux_) = "Ion Energy Flux"
-    AMIE_Names(iIon_diff_avee_) = "Ion Mean Energy"
-    AMIE_Names(iEle_mono_eflux_) = "ME Energy Flux"
-    AMIE_Names(iEle_mono_avee_) = "ME Mean Energy"
-    AMIE_Names(iEle_wave_eflux_) = "BB Energy Flux"
-    AMIE_Names(iEle_wave_avee_) = "BB Mean Energy"
-
-  end subroutine AMIE_link_variable_names
-
-  ! --------------------------------------------------------------------
   ! Link all of the variable names in the files to the proper pointers
   ! --------------------------------------------------------------------
 
@@ -1068,7 +1070,7 @@ contains
   end subroutine get_amie_electron_diffuse_eflux
 
   ! --------------------------------------------------------------------
-  ! Get electron diffuse e-flux
+  ! Get electron diffuse ave-e
   ! --------------------------------------------------------------------
 
   subroutine get_amie_electron_diffuse_avee(elecDiffAveEOut)
@@ -1077,6 +1079,83 @@ contains
       write(*, *) "=> Getting Electron Diffuse Average Energy from AMIE"
     call get_amie_values(iEle_diff_avee_, elecDiffAveEOut)
   end subroutine get_amie_electron_diffuse_avee
+
+  ! --------------------------------------------------------------------
+  ! Get Ion diffuse e-flux
+  ! --------------------------------------------------------------------
+
+  subroutine get_amie_ion_diffuse_eflux(ionDiffEfluxOut)
+    real, intent(inout) ::  ionDiffEfluxOut(nMltsNeeded, nLatsNeeded)
+    if (AMIE_iDebugLevel > 3) &
+      write(*, *) "=> Getting Ion Diffuse Energy Flux from AMIE"
+    call get_amie_values(iIon_diff_eflux_, ionDiffEfluxOut)
+  end subroutine get_amie_ion_diffuse_eflux
+
+  ! --------------------------------------------------------------------
+  ! Get Ion diffuse ave-e
+  ! --------------------------------------------------------------------
+
+  subroutine get_amie_ion_diffuse_avee(ionDiffAveEOut)
+    real, intent(inout) ::  ionDiffAveEOut(nMltsNeeded, nLatsNeeded)
+    if (AMIE_iDebugLevel > 3) &
+      write(*, *) "=> Getting Ion Diffuse Average Energy from AMIE"
+    call get_amie_values(iIon_diff_avee_, ionDiffAveEOut)
+  end subroutine get_amie_ion_diffuse_avee
+
+  ! --------------------------------------------------------------------
+  ! Get electron mono e-flux
+  ! --------------------------------------------------------------------
+
+  subroutine get_amie_electron_mono_eflux(elecMonoEfluxOut)
+    real, intent(inout) ::  elecMonoEfluxOut(nMltsNeeded, nLatsNeeded)
+    if (AMIE_iDebugLevel > 3) &
+      write(*, *) "=> Getting Electron Mono Energy Flux from AMIE"
+    call get_amie_values(iEle_mono_eflux_, elecMonoEfluxOut)
+  end subroutine get_amie_electron_mono_eflux
+
+  ! --------------------------------------------------------------------
+  ! Get electron mono ave-e
+  ! --------------------------------------------------------------------
+
+  subroutine get_amie_electron_mono_avee(elecMonoAveEOut)
+    real, intent(inout) ::  elecMonoAveEOut(nMltsNeeded, nLatsNeeded)
+    if (AMIE_iDebugLevel > 3) &
+      write(*, *) "=> Getting Electron Mono Average Energy from AMIE"
+    call get_amie_values(iEle_mono_avee_, elecMonoAveEOut)
+  end subroutine get_amie_electron_mono_avee
+
+  ! --------------------------------------------------------------------
+  ! Get electron wave e-flux
+  ! --------------------------------------------------------------------
+
+  subroutine get_amie_electron_wave_eflux(elecWaveEfluxOut)
+    real, intent(inout) ::  elecWaveEfluxOut(nMltsNeeded, nLatsNeeded)
+    if (AMIE_iDebugLevel > 3) &
+      write(*, *) "=> Getting Electron Wave Energy Flux from AMIE"
+    call get_amie_values(iEle_wave_eflux_, elecWaveEfluxOut)
+  end subroutine get_amie_electron_wave_eflux
+
+  ! --------------------------------------------------------------------
+  ! Get electron wave ave-e
+  ! --------------------------------------------------------------------
+
+  subroutine get_amie_electron_wave_avee(elecWaveAveEOut)
+    real, intent(inout) ::  elecWaveAveEOut(nMltsNeeded, nLatsNeeded)
+    if (AMIE_iDebugLevel > 3) &
+      write(*, *) "=> Getting Electron Wave Average Energy from AMIE"
+    call get_amie_values(iEle_wave_avee_, elecWaveAveEOut)
+  end subroutine get_amie_electron_wave_avee
+
+  ! --------------------------------------------------------------------
+  ! Get polar cap
+  ! --------------------------------------------------------------------
+
+  subroutine get_amie_polar_cap(polarCapOut)
+    real, intent(inout) ::  polarCapOut(nMltsNeeded, nLatsNeeded)
+    if (AMIE_iDebugLevel > 3) &
+      write(*, *) "=> Getting Polar Cap from AMIE"
+    call get_amie_values(iPolarCap_, polarCapOut)
+  end subroutine get_amie_polar_cap
 
 end Module ModAMIE_Interface
 
