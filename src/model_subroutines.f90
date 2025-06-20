@@ -234,7 +234,11 @@
   end subroutine run_aurora_model_electron_diffuse
 
   subroutine run_aurora_model_electron_mono(ie, eflux, avee)
-    ! At the moment, this only works for ovation...
+    ! At the moment, this only works for ovation & AMIE Files...
+
+    use ModAMIE_Interface, only: &
+      get_amie_electron_mono_eflux, &
+      get_amie_electron_mono_avee
 
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
@@ -250,6 +254,11 @@
 
     eFlux = 0.001 ! ergs/cm2/s
     AveE = 1.0 ! keV
+
+    if (ie%iAurora_ == iAmieAur_) then
+      call get_amie_electron_mono_eflux(eFlux)
+      call get_amie_electron_mono_avee(AveE)
+    endif
 
     if (ie%iAurora_ == iOvationPrime_) call ie%ovation_e_mono(eFlux, AveE)
 
@@ -257,7 +266,10 @@
   end subroutine run_aurora_model_electron_mono
 
   subroutine run_aurora_model_electron_wave(ie, eflux, avee)
-    ! At the moment, this only works for ovation...
+    ! At the moment, this only works for ovation & AMIE files...
+    use ModAMIE_Interface, only: &
+      get_amie_electron_wave_eflux, &
+      get_amie_electron_wave_avee
 
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
@@ -274,13 +286,21 @@
     eFlux = 0.001 ! ergs/cm2/s
     AveE = 1.0 ! keV
 
+    if (ie%iAurora_ == iAmieAur_) then
+      call get_amie_electron_wave_eflux(eFlux)
+      call get_amie_electron_wave_avee(AveE)
+    endif
+
     if (ie%iAurora_ == iOvationPrime_) call ie%ovation_e_wave(eFlux, AveE)
 
     return
   end subroutine run_aurora_model_electron_wave
 
   subroutine run_aurora_model_ion_diffuse(ie, eflux, avee)
-    ! At the moment, this only works for ovation...
+    ! At the moment, this only works for ovation and AMIE files...
+    use ModAMIE_Interface, only: &
+      get_amie_ion_diffuse_eflux, &
+      get_amie_ion_diffuse_avee
 
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
@@ -297,6 +317,11 @@
     eFlux = 0.001 ! ergs/cm2/s
     AveE = 10.0 ! keV
 
+    if (ie%iAurora_ == iAmieAur_) then
+      call get_amie_ion_diffuse_eflux(eFlux)
+      call get_amie_ion_diffuse_avee(AveE)
+    endif
+
     if (ie%iAurora_ == iOvationPrime_) call ie%ovation_ion_diffuse(eFlux, AveE)
 
     return
@@ -309,18 +334,25 @@
 
   ! Supply the polar cap to the user:
   ! polarcap = 1 inside the polar cap, and 0 elsewhere.
-
   subroutine get_polarcap_results(ie, polarcap)
+      use ModAMIE_Interface, only: get_amie_polar_cap
+
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(out) :: polarcap
 
-    if (maxval(ie%havePolarCap) == 0) then
-      isOk = .false.
-      call set_error("polar cap is not set, be careful!")
-    endif
+    polarcap = 0.0
 
-    polarcap = ie%havePolarCap
+    if (ie%iAurora_ == iAmieAur_) then
+      call get_amie_polar_cap(polarcap)
+    else
+      ! this should be set in FTA model, then
+      if (maxval(ie%havePolarCap) == 0) then
+        isOk = .false.
+        call set_error("polar cap is not set, be careful!")
+      endif
+      polarcap = ie%havePolarCap
+    endif
 
     return
   end subroutine get_polarcap_results
