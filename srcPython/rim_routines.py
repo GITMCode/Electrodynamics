@@ -94,6 +94,9 @@ def read_rim_ascii_file(filename):
 
     ### Read all data ###
 
+    dataOut['vars'] = namevar
+    dataOut['units'] = units
+
     # Create data arrays
     nPts = dataOut['ntheta'] * dataOut['nphi']
     for key in namevar:
@@ -152,6 +155,8 @@ def read_all_rim_files(filelist):
     nTimes = len(filelist)
     dataOneFile = read_rim_ascii_file(filelist[0])
 
+    print(dataOneFile['vars'])
+
     nLats = dataOneFile['ntheta']
     nMlts = dataOneFile['nphi']
 
@@ -188,11 +193,74 @@ def read_all_rim_files(filelist):
 
     # These are the RIM / SWMF variable names:
     rimVars = ['phi', 'e-flux', 'ave-e']
+    outVars = ['Potential (V)', \
+               'Electron Energy Flux (ergs/cm2/s)', \
+               'Electron Mean Energy (keV)']
+    # Units:
+    #   kV -> V = 1000.0
+    #   W/m2 -> ergs/cm2/s = 1000.0
+    #   keV -> keV = 1.0
+    unitFactors = [1000.0, 1000.0, 1.0]
+
+    # New files redeine things:
+    if ('e-flux-diffe' in dataOneFile['vars']):
+        rimVars[1] = 'e-flux-diffe'
+        rimVars[2] = 'ave-e-diffe'
+
+    # Now check for MAGNIT Variables:
+    if ('e-flux-mono' in dataOneFile['vars']):
+        rimVars.append('e-flux-mono')
+        outVars.append('ME Energy Flux (ergs/cm2/s)')
+        #   W/m2 -> ergs/cm2/s = 1000.0
+        unitFactors.append(1000.0)
+    if ('ave-e-mono' in dataOneFile['vars']):
+        rimVars.append('ave-e-mono')
+        outVars.append('ME Mean Energy (keV)')
+        #   keV -> keV = 1.0
+        unitFactors.append(1.0)
+
+    if ('e-flux-bbnd' in dataOneFile['vars']):
+        rimVars.append('e-flux-bbnd')
+        outVars.append('BB Energy Flux (ergs/cm2/s)')
+        #   W/m2 -> ergs/cm2/s = 1000.0
+        unitFactors.append(1000.0)
+    if ('ave-e-bbnd' in dataOneFile['vars']):
+        rimVars.append('ave-e-bbnd')
+        outVars.append('BB Mean Energy (keV)')
+        #   keV -> keV = 1.0
+        unitFactors.append(1.0)
+
+    if ('e-flux-diffi' in dataOneFile['vars']):
+        rimVars.append('e-flux-diffi')
+        outVars.append('Ion Energy Flux (ergs/cm2/s)')
+        #   W/m2 -> ergs/cm2/s = 1000.0
+        unitFactors.append(1000.0)
+    if ('ave-e-diffi' in dataOneFile['vars']):
+        rimVars.append('ave-e-diffi')
+        outVars.append('Ion Mean Energy (keV)')
+        #   keV -> keV = 1.0
+        unitFactors.append(1.0)
+
+    if ('rt 1/b' in dataOneFile['vars']):
+        rimVars.append('rt 1/b')
+        outVars.append('Polar Cap Indicator')
+        #   none -> none = 1.0
+        unitFactors.append(1.0)
+        oobn = dataOneFile['n_rt 1/b']
+        oobn[oobn > 0] = 0.0
+        oobn[oobn < 0] = 1.0
+        dataOneFile['n_rt 1/b'] = oobn
+        oobs = dataOneFile['s_rt 1/b']
+        oobs[oobs > 0] = 0.0
+        oobs[oobs < 0] = 1.0
+        dataOneFile['s_rt 1/b'] = oobs
+
+    print('-> Found the following variables (RIM -> AMIE):')
+    for iVar, rimVar in enumerate(rimVars):
+        print('  ', rimVar, ' -> ', outVars[iVar])
 
     # These are the AMIE variable names to write that IE understands:
-    dataToWriteN["Vars"] = ['Potential (V)', \
-                            'Electron Energy Flux (ergs/cm2/s)', \
-                            'Electron Mean Energy (keV)']
+    dataToWriteN["Vars"] = outVars
     dataToWriteN["nVars"] = len(dataToWriteN["Vars"])
     dataToWriteN["version"] = 0.9
     dataToWriteN["imf"] = []
@@ -205,9 +273,7 @@ def read_all_rim_files(filelist):
     for var in dataToWriteN["Vars"]:
         dataToWriteN[var] = []
 
-    dataToWriteS["Vars"] = ['Potential (V)', \
-                            'Electron Energy Flux (ergs/cm2/s)', \
-                            'Electron Mean Energy (keV)']
+    dataToWriteS["Vars"] = outVars
     iPot_ = 0
     iEflux_ = 1
     dataToWriteS["nVars"] = len(dataToWriteS["Vars"])
@@ -228,11 +294,36 @@ def read_all_rim_files(filelist):
     for file in filelist:
         dataOneFile = read_rim_ascii_file(file)
 
+        # This allows us to identify the open field-line region
+        # if rt 1/b is negative, this is an open field-line
+        # if rt 1/b is positive (or zero), it is closed.
+        if ('rt 1/b' in dataOneFile['vars']):
+            oobn = dataOneFile['n_rt 1/b']
+            oobn[oobn > 0] = 0.0
+            oobn[oobn < 0] = 1.0
+            dataOneFile['n_rt 1/b'] = oobn
+            oobs = dataOneFile['s_rt 1/b']
+            oobs[oobs > 0] = 0.0
+            oobs[oobs < 0] = 1.0
+            dataOneFile['s_rt 1/b'] = oobs
+
+        # According to Dan, the e-flux mono contains both the
+        # diffuse and mono-energetic component, so if we assume that
+        # there is still a maxwellian distribution in place (i.e., we have
+        # both diffuse and mono in one cell), we need to not double count
+        # this, so subtract off the diffuse.
+        if ('e-flux-mono' in dataOneFile['vars']):
+            dataOneFile['n_e-flux-mono'] = \
+                dataOneFile['n_e-flux-mono'] - dataOneFile['n_e-flux-diffe']
+            dataOneFile['s_e-flux-mono'] = \
+                dataOneFile['s_e-flux-mono'] - dataOneFile['s_e-flux-diffe']
+
         # Move variables over to export dictionary:
         for iVar, rimVar in enumerate(rimVars):
             amieVar = dataToWriteN["Vars"][iVar]
-            dataToWriteN[amieVar].append(dataOneFile['n_' + rimVar])
-            dataToWriteS[amieVar].append(np.flip(dataOneFile['s_' + rimVar], 0))
+            fac = unitFactors[iVar]
+            dataToWriteN[amieVar].append(fac * dataOneFile['n_' + rimVar])
+            dataToWriteS[amieVar].append(fac * np.flip(dataOneFile['s_' + rimVar], 0))
         dataToWriteN['times'].append(dataOneFile['time'])
         dataToWriteS['times'].append(dataOneFile['time'])
         
@@ -252,14 +343,6 @@ def read_all_rim_files(filelist):
         dataToWriteS["dst"].append([0.0, 0.0])
         dataToWriteS["hp"].append([hpS, 0.0])
         dataToWriteS["cpcp"].append(cpcpS)
-
-
-        # Convert from W/m2 to mW/m2 or ergs/cm2/s:
-        dataToWriteN[cEflux][-1] = dataToWriteN[cEflux][-1] * 1000.0
-        dataToWriteS[cEflux][-1] = dataToWriteS[cEflux][-1] * 1000.0
-        # Convert from kV to V:
-        dataToWriteN[cPot][-1] = dataToWriteN[cPot][-1] * 1000.0
-        dataToWriteS[cPot][-1] = dataToWriteS[cPot][-1] * 1000.0
         
     dataToWriteN['nTimes'] = len(dataToWriteN['times'])
     dataToWriteS['nTimes'] = len(dataToWriteS['times'])
