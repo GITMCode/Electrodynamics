@@ -100,7 +100,7 @@ def read_mage_file(filename):
     area = dtom * dtom * dLat * dLon * np.cos(lats2d * np.pi / 180.0)
 
     sPotA = 'Potential (V)'
-    sEfluxA = 'Electron Energy Flux (ergs/cm2/s)'
+    sEfluxA = 'Electron Energy Flux (mW/m2)'
     sAveeA = 'Electron Mean Energy (keV)'
     # this is in kV
     sPotN = 'Potential NORTH'
