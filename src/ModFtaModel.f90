@@ -44,7 +44,6 @@ module ModFTAModel
   integer :: nLatsFta_mod
   real :: minLat_mod
   real :: dLat_mod = 0.5
-  real, dimension(nLatsFta) :: lats_nonfixed_grid
   real, allocatable :: lbhl(:,:), lbhs(:,:), avee(:,:), eflux(:,:)
 
 
@@ -113,7 +112,6 @@ contains
     al = IOr_NeedAL
 
     ! Limit AL with AU  - Jun, 2025
-    write(*,*) '-> input au,al: ', au,'/',al
     if (au > 1050.0) au = 1050
     if (au < 25.0) au = 25.0
      
@@ -138,20 +136,18 @@ contains
                    minval(pack(mlats0_l,efs0_l>0)))
     minLat_mod = floor(minLat_mod/dLat ) * dLat
     nLatsFta_mod = int((90 - minLat_mod)/dLat)
-    write(*,*) 'minLat:', minLat_mod
 
+    
     ! adjust width
     lp = (mlats0_l(:,nEnergies) - mlats0_l(:,1)) < 0.25
     any_width = any(lp)
     if (any_width) then
-        write(*,*) '---> adjust widht for lbhl'
         call adjust_width(mlats0_l,lp)
     endif
 
     lp = (mlats0_s(:,nEnergies) - mlats0_s(:,1)) < 0.25
     any_width = any(lp)
     if (any_width) then
-        write(*,*) '---> adjust widht for lbhs'
         call adjust_width(mlats0_s,lp)
     endif
 
@@ -163,7 +159,6 @@ contains
     if (any_offset) then 
         startMlt = minval(pack(mlts_fixed_grid,lp)) - dMlt
         endMlt = maxval(pack(mlts_fixed_grid,lp)) + dMlt
-        write(*,*) 'lbhs aurora is poleward of lbhl, adjusting... ',startMlt,endMlt
         call adjust_offset(mlats0_l,mlats0_s,startMlt,endMlt)
     end if
 
@@ -173,7 +168,6 @@ contains
     if (any_offset) then 
         startMlt = minval(pack(mlts_fixed_grid,lp)) - dMlt
         endMlt = maxval(pack(mlts_fixed_grid,lp)) + dMlt
-        write(*,*) 'lbhl aurora is poleward of lbhs, adjusting...',startMlt,endMlt
         call adjust_offset(mlats0_l,mlats0_s,startMlt,endMlt)
     end if
 
