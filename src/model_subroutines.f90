@@ -335,7 +335,7 @@
   ! Supply the polar cap to the user:
   ! polarcap = 1 inside the polar cap, and 0 elsewhere.
   subroutine get_polarcap_results(ie, polarcap)
-      use ModAMIE_Interface, only: get_amie_polar_cap
+    use ModAMIE_Interface, only: get_amie_polar_cap
 
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
