@@ -675,7 +675,6 @@ contains
 
     close(iUnitAmie_)
 
-
     if (tmp_amiepos <= 0) then
       ! ftell doesn't seem to work on all systems. So, try this instead:
       !! Try this the hard way:
@@ -683,7 +682,7 @@ contains
            file=this%fileName, &
            action='read', &
            access='stream', &
-           iomsg = msg, &
+           iomsg=msg, &
            iostat=iError)
 
       nLinesInHeader = 4 + this%nVars
@@ -697,18 +696,18 @@ contains
       enddo
 
       if (AMIE_iDebugLevel >= 1) &
-        write(*,*) ' --> tmp_amiepos, the hard way : ', tmp_amiepos
+        write(*, *) ' --> tmp_amiepos, the hard way : ', tmp_amiepos
 
       close(iUnitAmie_)
     endif
 
     if (tmp_amiepos .ne. this%headerLength) then
       if (AMIE_iDebugLevel > -1) then
-        write(*,*) 'WARNING ---->>>> AMIE file header length is strange!'
-        write(*,*) '   header length : ', this%headerLength
-        write(*,*) '   tmp_amiepos : ', tmp_amiepos
-        write(*,*) '   -> forcing length to actual instead of calculated!'
-        write(*,*) '   -> if code dies, then complain to Aaron!'
+        write(*, *) 'WARNING ---->>>> AMIE file header length is strange!'
+        write(*, *) '   header length : ', this%headerLength
+        write(*, *) '   tmp_amiepos : ', tmp_amiepos
+        write(*, *) '   -> forcing length to actual instead of calculated!'
+        write(*, *) '   -> if code dies, then complain to Aaron!'
       endif
       this%headerLength = tmp_amiepos
     endif

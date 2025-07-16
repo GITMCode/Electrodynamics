@@ -55,7 +55,7 @@ program test_01
 !   call model % aurora_model("hpi")
 !   call model%aurora_model("fre")
 !   call model % aurora_model("pem")
-   call model % aurora_model("fta")
+  call model%aurora_model("fta")
 !   call model % aurora_model("amie")
 
   ! Set where the code can find the model files:
@@ -194,20 +194,19 @@ program test_01
 
     if (model%doReadHPI) &
       ! call model % useAeHp()
-     call model%hp(hp)
-     
-     if (model % doReadSME) then
-      call model % au(au)
-      call model % al(al)
-     endif
-     
-     
-     ! Get potential from the IE library:
-     call model % get_potential(potential)
-     ! Get electron diffuse aurora from the IE library:
-     call model % get_aurora(eDiffuseEflux, eDiffuseAvee)
-     !   write(*,*) potential
-     call model % get_polarcap(polarcap)
+      call model%hp(hp)
+
+    if (model%doReadSME) then
+      call model%au(au)
+      call model%al(al)
+    endif
+
+    ! Get potential from the IE library:
+    call model%get_potential(potential)
+    ! Get electron diffuse aurora from the IE library:
+    call model%get_aurora(eDiffuseEflux, eDiffuseAvee)
+    !   write(*,*) potential
+    call model%get_polarcap(polarcap)
 
     call output_ie(iError)
     if (iError /= 0) call set_error("Main: Error in output_ie")

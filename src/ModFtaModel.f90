@@ -38,6 +38,14 @@ module ModFTAModel
   real, dimension(nMltsFta, nLatsFta) :: LBHSResult
   real, dimension(nMltsFta, nLatsFta) :: PolarCapResult
 
+  real, dimension(nMltsFta) :: mlts_fixed_grid
+
+  ! In case we need to adjust the grid:
+  integer :: nLatsFta_mod
+  real :: minLat_mod
+  real :: dLat_mod = 0.5
+  real, allocatable :: lbhl(:, :), lbhs(:, :), avee(:, :), eflux(:, :)
+
   real :: AL_split = 500.0
 
 contains
@@ -78,13 +86,15 @@ contains
     real, intent(in) :: IOr_NeedAL
     integer, intent(out) :: iError
 
-    integer :: iAe, iMLat, i, iLat, iLon, iMlt
-    real :: au, al, ae, gMlat, mindist
+    real :: au, al, ae
     character(len=10) :: emis_type
 
     real, dimension(nMltsFta, nEnergies) :: mlats0_l, efs0_l, mlats0_s, efs0_s
-    real, dimension(nMltsFta, nLatsFta) :: lbhl, lbhs, avee, eflux, polarcap
-
+    real, dimension(nMltsFta, nLatsFta) :: polarcap
+    real :: al_lp, al_up
+    logical :: any_width, any_offset
+    logical, dimension(nMltsFta) :: lp
+    real :: startMlt, endMlt
     iError = 0
 
     if (.not. isInitialized) then
@@ -100,18 +110,18 @@ contains
     au = IOr_NeedAU
     al = IOr_NeedAL
 
-    ! -----------------------------------------------------------------------
-    ! Limits of FTA model: If AL is greater (less) than -25 (-1200)
-    ! nT, AL is equal to -25 (-1200) nT; If AU is less than 25 nT or
-    ! 0.12*|AL|, AU is equal to the larger value of them; If AU is
-    ! greater than 400 nT, AU is equal to 400 nT.
-    ! -----------------------------------------------------------------------
-
-    if (al > -25.0) al = -25.0
-    !if (al < -1200.0) al = -1200.0
-    !if (au < 0.12*abs(al)) au = 0.12*abs(al)
+    ! Limit AL with AU  - Jun, 2025
+    if (au > 1050.0) au = 1050
     if (au < 25.0) au = 25.0
-    !if (au > 400.0) au = 400.0
+
+    call limiter_al_lp(au, al_lp)
+    if (al < al_lp) al = al_lp
+
+    if (au > 750.0) then
+      call limiter_al_up(au, al_up)
+      if (al > al_up) al = al_up
+    endif
+
     ae = au - al
 
     emis_type = 'lbhl'
@@ -119,6 +129,49 @@ contains
 
     emis_type = 'lbhs'
     call calc_emission_pattern(au, al, emis_type, mlats0_s, efs0_s)
+
+    ! locate minLat
+    minLat_mod = min(minval(pack(mlats0_s, efs0_s > 0)), &
+                     minval(pack(mlats0_l, efs0_l > 0)))
+    minLat_mod = floor(minLat_mod/dLat)*dLat
+    nLatsFta_mod = int((90 - minLat_mod)/dLat)
+
+    ! adjust width
+    lp = (mlats0_l(:, nEnergies) - mlats0_l(:, 1)) < 0.25
+    any_width = any(lp)
+    if (any_width) then
+      call adjust_width(mlats0_l, lp)
+    endif
+
+    lp = (mlats0_s(:, nEnergies) - mlats0_s(:, 1)) < 0.25
+    any_width = any(lp)
+    if (any_width) then
+      call adjust_width(mlats0_s, lp)
+    endif
+
+    ! adjust offsets
+    lp = (mlats0_s(:, 1) - mlats0_l(:, nEnergies)) >= -0.25/20.0
+    any_offset = any(lp)
+
+    if (any_offset) then
+      startMlt = minval(pack(mlts_fixed_grid, lp)) - dMlt
+      endMlt = maxval(pack(mlts_fixed_grid, lp)) + dMlt
+      call adjust_offset(mlats0_l, mlats0_s, startMlt, endMlt)
+    endif
+
+    lp = (mlats0_l(:, 1) - mlats0_s(:, nEnergies)) >= -0.25/20.0
+    any_offset = any(lp)
+
+    if (any_offset) then
+      startMlt = minval(pack(mlts_fixed_grid, lp)) - dMlt
+      endMlt = maxval(pack(mlts_fixed_grid, lp)) + dMlt
+      call adjust_offset(mlats0_l, mlats0_s, startMlt, endMlt)
+    endif
+
+    allocate(lbhl(nMltsFta, nLatsFta))
+    allocate(lbhs(nMltsFta, nLatsFta))
+    allocate(eflux(nMltsFta, nLatsFta))
+    allocate(avee(nMltsFta, nLatsFta))
 
     call calc_full_patterns(mlats0_l, efs0_l, mlats0_s, efs0_s, &
                             lbhl, lbhs, eflux, avee, polarcap)
@@ -128,6 +181,11 @@ contains
     eFluxResult = eflux
     AveEResult = avee
     polarCapResult = polarcap
+
+    deallocate(lbhl)
+    deallocate(lbhs)
+    deallocate(eflux)
+    deallocate(avee)
 
   end subroutine update_fta_model
 
@@ -201,7 +259,6 @@ contains
     character(len=10) :: param, forder
     character(len=10) :: emis_type
     character(len=iCharLenFta_) :: NameOfIndexFile, DataDir
-    integer :: i
 
     forder = 'r1'
     param = 'k_k'
@@ -235,8 +292,6 @@ contains
 
     forder = 'r2'
     param = 'k_k'
-    !NameOfIndexFile = trim(DataDir)//'fit_coef_21bins_'//trim(emis_type)// &
-    !     '_'//trim(forder)//'_'//trim(param)//'.txt'
     NameOfIndexFile = trim(DataDir)//'fit_coef_21bins_'//trim(emis_type)// &
                       '_'//trim(forder)//'_'//trim(param)//'_log_4p.txt'
     call read_coef_file(NameOfIndexFile, tmp2)
@@ -244,8 +299,6 @@ contains
 
     forder = 'r2'
     param = 'k_b'
-    !NameOfIndexFile = trim(DataDir)//'fit_coef_21bins_'//trim(emis_type)// &
-    !     '_'//trim(forder)//'_'//trim(param)//'.txt'
     NameOfIndexFile = trim(DataDir)//'fit_coef_21bins_'//trim(emis_type)// &
                       '_'//trim(forder)//'_'//trim(param)//'_log_4p.txt'
     call read_coef_file(NameOfIndexFile, tmp2)
@@ -269,7 +322,6 @@ contains
     logical, dimension(nEnergies) :: lp
     logical, dimension(nLatsFta) :: lp1
     integer, dimension(nLatsFta) :: idx
-    real :: tmp1
     integer :: i, ii, nn
 
     mlat = lats_fixed_grid
@@ -324,7 +376,7 @@ contains
     character(len=iCharLenFta_) :: dataDir
 
     double precision, dimension(nMltsFta, nParams) :: &
-      k_k, k_b, b_k, b_b, k_k2, k_b2, tmp2
+      k_k, k_b, b_k, b_b, k_k2, k_b2
 
     integer, dimension(nEnergies) :: idx1, idx2
     integer :: i
@@ -357,6 +409,7 @@ contains
 
     isInitialized = .true.
     lats_fixed_grid = (/(i, i=0, nLatsFta - 1, 1)/)*dLat + minLat + dLat/2.0
+    mlts_fixed_grid = (/(i, i=0, nMltsFta - 1, 1)/)*dMlt + dMlt/2.0
 
   end subroutine initialize_fta
 
@@ -377,7 +430,6 @@ contains
     character(len=10) :: emis_type
 
     integer :: iEmission = 0
-    integer :: iMlt, iEngergy
 
     do i = 1, 2
       if (trim(emis_type) == trim(emissions(i))) iEmission = i
@@ -434,10 +486,10 @@ contains
   ! Calculate the average energy from the LBHL and LBHS ratio
   ! -----------------------------------------------------------------
 
-  subroutine calc_avee(lbhl, lbhs, avee)
+  subroutine calc_avee!(lbhl, lbhs, avee)
 
-    real, dimension(nMltsFta, nLatsFta), intent(in) :: lbhl, lbhs
-    real, dimension(nMltsFta, nLatsFta), intent(out) :: avee
+    ! real, dimension(nMltsFta, nLatsFta), intent(in) :: lbhl, lbhs
+    ! real, dimension(nMltsFta, nLatsFta), intent(out) :: avee
     real :: a, lb, c, ratio
     integer :: iMlt, iLat
 
@@ -504,8 +556,176 @@ contains
     enddo
 
     eflux = lbhl/110.0
-    call calc_avee(lbhl, lbhs, avee)
+    call calc_avee!(lbhl, lbhs, avee)
 
   end subroutine calc_full_patterns
+
+  ! -----------------------------------------------------------------
+  ! Adjust the offset between lbhl and lbhs
+  ! -----------------------------------------------------------------
+
+  subroutine adjust_offset(mlats_l, mlats_s, gap1, gap3)
+
+    real, dimension(nMltsFta, nLatsFta_mod) :: mlats_s, mlats_l
+    real, intent(in) :: gap1, gap3
+    real, dimension(nMltsFta) :: wght, eb, pb, width_s, width_l
+    logical, dimension(nMltsFta) :: loc
+    integer :: k11, i
+    real :: gap2
+
+    wght = 0.0
+
+    ! Calculate middle gap
+    gap2 = (gap1 + gap3)*0.5
+
+    loc = (mlts_fixed_grid > gap1) .and. (mlts_fixed_grid <= gap2)
+    do i = 1, nMltsFta
+      if (loc(i)) then
+        wght(i) = (mlts_fixed_grid(i) - gap1)/(gap2 - gap1)*0.5
+        !write(*,*) 'mlt,wght: ', mlts_fixed_grid(i),wght(i)
+      endif
+    enddo
+
+    loc = (mlts_fixed_grid > gap2) .and. (mlts_fixed_grid < gap3)
+    do i = 1, nMltsFta
+      if (loc(i)) then
+        wght(i) = (1 - (mlts_fixed_grid(i) - gap2)/(gap3 - gap2))*0.5
+        !write(*,*) 'mlt,wght: ', mlts_fixed_grid(i),wght(i)
+      endif
+    enddo
+
+    eb = mlats_s(:, 1)*wght + mlats_l(:, 1)*(1.0 - wght)
+    pb = mlats_s(:, nEnergies)*wght + mlats_l(:, nEnergies)*(1.0 - wght)
+    width_s = mlats_s(:, nEnergies) - mlats_s(:, 1)
+    width_l = mlats_l(:, nEnergies) - mlats_l(:, 1)
+
+    loc = (mlts_fixed_grid > gap1) .and. (mlts_fixed_grid < gap3)
+
+    ! Adjust latitudes
+    do i = 1, nMltsFta
+      do k11 = 1, nEnergies - 2
+        if (loc(i)) then
+          !write(*,*) 'k11,i',k11,i,eb(i), mlats_s(i, k11), mlats_s(i, k11 + 1)
+          mlats_s(i, k11 + 1) = (mlats_s(i, k11 + 1) - mlats_s(i, 1))* &
+                                (pb(i) - eb(i))/width_s(i) + eb(i)
+          mlats_l(i, k11 + 1) = (mlats_l(i, k11 + 1) - mlats_l(i, 1))* &
+                                (pb(i) - eb(i))/width_l(i) + eb(i)
+          !write(*,*) 'k11,i',k11,i,mlats_s(i, k11), mlats_s(i, k11 + 1)
+        endif
+      enddo
+    enddo
+
+    ! border adjustments
+    do i = 1, nMltsFta
+      if (loc(i)) then
+        mlats_s(i, 1) = eb(i)
+        mlats_s(i, nEnergies) = pb(i)
+        mlats_l(i, 1) = eb(i)
+        mlats_l(i, nEnergies) = pb(i)
+      endif
+    enddo
+
+  end subroutine adjust_offset
+
+  subroutine adjust_width(mlat, loc)
+
+    real, dimension(nMltsFta, nEnergies):: mlat
+    logical, dimension(nMltsFta) :: loc
+    integer :: i, j
+
+    do i = 1, nMltsFta
+      do j = 1, nEnergies - 1
+
+        if (loc(i) .and. ((mlat(i, j + 1) - mlat(i, j)) < (0.25/20.0))) then
+          mlat(i, j + 1) = mlat(i, j) + 0.25/20.0
+
+        endif
+      enddo
+    enddo
+
+  end subroutine adjust_width
+
+  ! -----------------------------------------------------------------
+  ! Construct limiter of AL based on AU
+  ! -----------------------------------------------------------------
+
+  subroutine limiter_al_lp(au, al)
+
+    real, intent(in) :: au
+    real, intent(out) :: al
+
+    real :: a, b, c
+    real :: coef1_m, coef2_m, x1_m, x2_m, y1_m, y2_m, &
+            coef1_p, coef2_p, x1_p, x2_p, y1_p, y2_p
+    real :: au_, al_, al1, al2
+
+    if (au < 150.0) then
+      a = -7.89e-06
+      b = -0.0952
+      c = -66.0
+
+      al = (-sqrt(b**2.0 - 4.0*(c - au)*a) - b)/(2.0*a) + 10.0
+
+    else if (au >= 150.0 .and. au <= 175.0) then
+      al1 = -3100.0
+      al2 = -3025.0
+      al = (al2 - al1)/(175.0 - 150.0)*(au - 150.0) &
+           + al1 + 10.0
+
+    else if (au > 175.0 .and. au <= 300.0) then
+      coef1_m = 0.18503781
+      coef2_m = 2.37717756
+
+      x1_m = -3010.0
+      x2_m = 1275.0
+      y1_m = 175.0
+      y2_m = 125.0
+
+      au_ = (au - y1_m)/y2_m
+      al_ = asinh(au_/coef1_m)/coef2_m
+      al = al_*x2_m + x1_m
+
+    else if (au > 300.0 .and. au <= 575.0) then
+      coef1_p = 0.27380323
+      coef2_p = 2.0135317
+
+      x1_p = -1580.0
+      x2_p = 300.0
+      x2_p = 325.0
+      y2_p = 250.0
+
+      au_ = (au - y1_p)/y2_p
+      al_ = asinh(au_/coef1_p)/coef2_p
+      al = al_*x2_p + x1_p
+
+    else if (au > 575.0 .and. au <= 775.0) then
+      a = 0.5573
+      b = 1300.0 - 10.0
+
+      al = (au - b)/a
+
+    else if (au > 775.0 .and. au <= 1050.0) then
+      a = 0.689
+      b = 1440.0 - 10.0
+
+      al = (au - b)/a
+    else
+      call set_error("The FTA limiter does not work for AU > 1050!")
+    endif
+
+  end subroutine limiter_al_lp
+
+  subroutine limiter_al_up(au, al)
+
+    real, intent(in) :: au
+    real, intent(out) :: al
+
+    real :: a, b
+
+    a = -0.682
+    b = 734.0 - 10.0
+    al = (au - b)/a
+
+  end subroutine limiter_al_up
 
 end module ModFTAModel
