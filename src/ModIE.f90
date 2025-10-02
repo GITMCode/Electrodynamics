@@ -49,6 +49,10 @@ MODULE ModIE
     character(len=iCharLenIE_) :: modelDirFta = "FTA/"
     character(len=iCharLenIE_) :: northFile = "none"
     character(len=iCharLenIE_) :: southFile = "none"
+    character(len=iCharLenIE_), allocatable, dimension(:) :: northFiles
+    character(len=iCharLenIE_), allocatable, dimension(:) :: southFiles
+    integer :: nFilesNorth = 0
+    integer :: nFilesSouth = 0
 
     ! ----------------------------------------------------------------
     ! These are the states that the models has, if we either read in
@@ -135,6 +139,11 @@ MODULE ModIE
     procedure :: aurora_model => set_aurora_model
     procedure :: filename_north => set_filename_north
     procedure :: filename_south => set_filename_south
+
+    procedure :: nfiles_north => set_nfiles_north
+    procedure :: nfiles_south => set_nfiles_south
+    procedure :: filename_list_north => set_filename_list_north
+    procedure :: filename_list_south => set_filename_list_south
 
     ! Where to find the data files for empirical models:
     procedure :: model_dir => set_model_dir
@@ -240,7 +249,8 @@ contains
     ! ------------------
     ! --- AMIE Files ---
     if ((this%iEfield_ == iAmiePot_) .or. (this%iAurora_ == iAmieAur_)) then
-      call initialize_amie_files(this%northFile, this%southFile, this%iDebugLevel)
+      call initialize_amie_files(this%nFilesNorth, this%northFiles, &
+                                 this%nFilesSouth, this%southFiles, this%iDebugLevel)
     endif
 
     !\
