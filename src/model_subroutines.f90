@@ -31,6 +31,10 @@
     if (this%iDebugLevel > 0) &
       write(*, *) "=> Setting north file name to : ", trim(filename)
     this%northFile = filename
+    if (allocated(this%northFiles)) deallocate(this%northFiles)
+    allocate(this%northFiles(1))
+    this%northFiles(1) = filename
+    this%nFilesNorth = 1
   end subroutine set_filename_north
 
   ! ------------------------------------------------------------
@@ -41,7 +45,80 @@
     if (this%iDebugLevel > 0) &
       write(*, *) "=> Setting south file name to : ", trim(filename)
     this%southFile = filename
+    if (allocated(this%southFiles)) deallocate(this%southFiles)
+    allocate(this%southFiles(1))
+    this%southFiles(1) = filename
+    this%nFilesSouth = 1
   end subroutine set_filename_south
+
+  ! ------------------------------------------------------------
+  !  If the user has a list of filenames, you have to do things
+  !   in the following order:
+  !   - set the number of files
+  !   - set the file names one by one
+  !   this is because character lengths can be generic
+
+  ! ------------------------------------------------------------
+  ! set nfiles for north
+  subroutine set_nfiles_north(this, nFiles)
+    class(ieModel) :: this
+    integer, intent(in) :: nFiles
+    if (this%iDebugLevel > 0) &
+      write(*, *) "=> Setting nFilesNorth to : ", nFiles
+    this%nFilesNorth = nFiles
+    if (allocated(this%northFiles)) deallocate(this%northFiles)
+    allocate(this%northFiles(nFiles))
+  end subroutine set_nfiles_north
+
+  ! ------------------------------------------------------------
+  ! filename for north
+  subroutine set_filename_list_north(this, iFile, filename)
+    class(ieModel) :: this
+    integer, intent(in) :: iFile
+    character(len=*), intent(in) :: filename
+    if (this%iDebugLevel > 0) &
+      write(*, *) "=> Setting north file name in list to : ", trim(filename)
+    if (.not. allocated(this%northFiles)) then
+      call set_error("Need to set number of AMIE files (north) before sending file names.")
+      return
+    endif
+    if (iFile > this%nFilesNorth) then
+      call set_error("iFile > nFilesNorth in set_filename_list_north.")
+      return
+    endif
+    this%northFiles(iFile) = filename
+  end subroutine set_filename_list_north
+
+  ! ------------------------------------------------------------
+  ! set nfiles for south
+  subroutine set_nfiles_south(this, nFiles)
+    class(ieModel) :: this
+    integer, intent(in) :: nFiles
+    if (this%iDebugLevel > 0) &
+      write(*, *) "=> Setting nFilesSouth to : ", nFiles
+    this%nFilesSouth = nFiles
+    if (allocated(this%southFiles)) deallocate(this%southFiles)
+    allocate(this%southFiles(nFiles))
+  end subroutine set_nfiles_south
+
+  ! ------------------------------------------------------------
+  ! filename for south
+  subroutine set_filename_list_south(this, iFile, filename)
+    class(ieModel) :: this
+    integer, intent(in) :: iFile
+    character(len=*), intent(in) :: filename
+    if (this%iDebugLevel > 0) &
+      write(*, *) "=> Setting south file name in list to : ", trim(filename)
+    if (.not. allocated(this%southFiles)) then
+      call set_error("Need to set number of AMIE files (south) before sending file names.")
+      return
+    endif
+    if (iFile > this%nFilesSouth) then
+      call set_error("iFile > nFilesSouth in set_filename_list_south.")
+      return
+    endif
+    this%southFiles(iFile) = filename
+  end subroutine set_filename_list_south
 
   ! ------------------------------------------------------------
   ! set the directory for finding all of the coef files
