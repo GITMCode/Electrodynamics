@@ -14,6 +14,7 @@ Module ModAMIE_Interface
   integer :: iUnitAmie_ = 78
   integer, parameter :: nVarsMax = 100
   integer :: AMIE_iDebugLevel = 0
+  real, parameter :: bufferTime = 300.0
 
   ! For now we assume that there are only 2 files, but this is
   ! hopefully written in such a generic way that there can be more
@@ -33,6 +34,8 @@ Module ModAMIE_Interface
   integer, parameter :: iEle_wave_avee_ = 10
   integer, parameter :: iPolarCap_ = 11
   integer, parameter :: nValues = 11
+  integer, parameter :: nNamesMax = 200
+  integer :: nNames = 0
 
   ! This is the maximum size of the memory we want to take, so we
   ! don't run out of memory (this is equivalent to a course grid at
@@ -42,6 +45,8 @@ Module ModAMIE_Interface
   ! The names of the variables are defined in this array, and initialized
   ! in the function below
   character(len=iCharLenIE_) :: AMIE_Names(nValues)
+  character(len=iCharLenIE_) :: AMIE_Names_List(nNamesMax)
+  integer :: AMIE_Names_Mapper(nNamesMax)
 
   ! --------------------------------------------------------------------
   ! AMIE file storage as a structure?
@@ -124,9 +129,46 @@ contains
   ! aurora, you need to use these names for the variables!
   ! --------------------------------------------------------------------
 
+  subroutine add_to_list_and_mapper(iVar_, cName)
+
+    implicit none
+    character(len=*), intent(in) :: cName
+    integer, intent(in) :: iVar_
+
+    nNames = nNames + 1
+    AMIE_Names_List(nNames) = cName
+    AMIE_Names_Mapper(nNames) = iVar_
+
+  end subroutine add_to_list_and_mapper
+
   subroutine AMIE_link_variable_names()
 
     implicit none
+
+    call add_to_list_and_mapper(iPotential_, "Potential")
+    call add_to_list_and_mapper(iPotential_, "Potential (kV)")
+    call add_to_list_and_mapper(iPotential_, "Potential (V)")
+    call add_to_list_and_mapper(iPotential_, "Electric Potential")
+    call add_to_list_and_mapper(iPotentialy_, "PotentialY")
+    call add_to_list_and_mapper(iEle_diff_eflux_, "Electron Energy Flux")
+    call add_to_list_and_mapper(iEle_diff_eflux_, "Electron Energy Flux (ergs/cm2")
+    call add_to_list_and_mapper(iEle_diff_eflux_, "Auroral Energy Flux (er/cm2/s)")
+    call add_to_list_and_mapper(iEle_diff_avee_, "Electron Mean Energy")
+    call add_to_list_and_mapper(iEle_diff_avee_, "Electron Mean Energy (keV)")
+    call add_to_list_and_mapper(iEle_diff_avee_, "Auroral Mean Energy (keV)")
+    call add_to_list_and_mapper(iIon_diff_eflux_, "Ion Energy Flux")
+    call add_to_list_and_mapper(iIon_diff_eflux_, "Ion Energy Flux (ergs/cm2/s)")
+    call add_to_list_and_mapper(iIon_diff_avee_, "Ion Mean Energy")
+    call add_to_list_and_mapper(iIon_diff_avee_, "Ion Mean Energy (keV)")
+    call add_to_list_and_mapper(iEle_mono_eflux_, "ME Energy Flux")
+    call add_to_list_and_mapper(iEle_mono_eflux_, "ME Energy Flux (ergs/cm2/s)")
+    call add_to_list_and_mapper(iEle_mono_avee_, "ME Mean Energy")
+    call add_to_list_and_mapper(iEle_mono_avee_, "ME Mean Energy (keV)")
+    call add_to_list_and_mapper(iEle_wave_eflux_, "BB Energy Flux")
+    call add_to_list_and_mapper(iEle_wave_eflux_, "BB Energy Flux (ergs/cm2/s)")
+    call add_to_list_and_mapper(iEle_wave_avee_, "BB Mean Energy")
+    call add_to_list_and_mapper(iEle_wave_avee_, "BB Mean Energy (keV)")
+    call add_to_list_and_mapper(iPolarCap_, "Polar Cap Indicator")
 
     AMIE_Names(iPotential_) = "Potential"
     AMIE_Names(iPotentialy_) = "PotentialY"
@@ -151,7 +193,7 @@ contains
     implicit none
 
     class(amieFile) :: this
-    character(len=*), intent(in) :: fileIn
+    character(len=iCharLenIE_), intent(in) :: fileIn
     logical, intent(in) :: isNorthIn
     logical, intent(in) :: isMirrorIn
     integer :: iError = 0, iVar, i
@@ -206,9 +248,79 @@ contains
     implicit none
 
     real(kind=Real8_), intent(in) :: timeIn
+    integer iFile
+    real(kind=Real8_) :: sTime, eTime
+    logical didFindFile
 
-    call read_amie_data(allFiles(1), timeIn)
-    call read_amie_data(allFiles(2), timeIn)
+    didFindFile = .false.
+    ! Look for north first
+    do iFile = 1, nFiles
+      if (allFiles(iFile)%isNorth) then
+        sTime = allFiles(iFile)%times(1)
+        eTime = allFiles(iFile)%times(AllFiles(iFile)%nTimes)
+        if (timeIn >= sTime .and. timeIn <= eTime) then
+          call read_amie_data(allFiles(iFile), timeIn)
+          didFindFile = .true.
+        else
+          allFiles(iFile)%nTimesInMemory = 0
+        endif
+      endif
+    enddo
+
+    if (.not. didFindFile) then
+      ! open up search
+      do iFile = 1, nFiles
+        if (allFiles(iFile)%isNorth) then
+          sTime = allFiles(iFile)%times(1) - bufferTime
+          eTime = allFiles(iFile)%times(AllFiles(iFile)%nTimes)
+          if (iFile == nFiles) eTime = eTime + bufferTime
+          if (timeIn >= sTime .and. timeIn <= eTime) then
+            call read_amie_data(allFiles(iFile), timeIn)
+            didFindFile = .true.
+          else
+            allFiles(iFile)%nTimesInMemory = 0
+          endif
+        endif
+      enddo
+    endif
+
+    if (.not. didFindFile) &
+      call set_error("Error trying to find time in AMIE files (north)!")
+
+    didFindFile = .false.
+    ! Look for south
+    do iFile = 1, nFiles
+      if (.not. allFiles(iFile)%isNorth) then
+        sTime = allFiles(iFile)%times(1)
+        eTime = allFiles(iFile)%times(AllFiles(iFile)%nTimes)
+        if (timeIn >= sTime .and. timeIn <= eTime) then
+          call read_amie_data(allFiles(iFile), timeIn)
+          didFindFile = .true.
+        else
+          allFiles(iFile)%nTimesInMemory = 0
+        endif
+      endif
+    enddo
+
+    if (.not. didFindFile) then
+      ! open up search
+      do iFile = 1, nFiles
+        if (.not. allFiles(iFile)%isNorth) then
+          sTime = allFiles(iFile)%times(1) - bufferTime
+          eTime = allFiles(iFile)%times(AllFiles(iFile)%nTimes)
+          if (iFile == nFiles) eTime = eTime + bufferTime
+          if (timeIn >= sTime .and. timeIn <= eTime) then
+            call read_amie_data(allFiles(iFile), timeIn)
+            didFindFile = .true.
+          else
+            allFiles(iFile)%nTimesInMemory = 0
+          endif
+        endif
+      enddo
+    endif
+
+    if (.not. didFindFile) &
+      call set_error("Error trying to find time in AMIE files (south)!")
 
   end subroutine update_amie_files
 
@@ -259,7 +371,7 @@ contains
 
   ! --------------------------------------------------------------------
   ! This function loads the array dataInMemory, which is most likely
-  ! a subset of the
+  ! a subset of the whole file
   ! --------------------------------------------------------------------
 
   subroutine read_amie_data(this, startTime)
@@ -301,6 +413,11 @@ contains
 
       call find_time(this%times, this%nTimes, startTime, startIndex)
       endIndex = startIndex + this%nTimesGoal - 1
+
+      if (AMIE_iDebugLevel > 0) &
+        write(*, *) 'looking for times : ', this%times(this%nTimes), startTime
+
+      if (startTime > this%times(this%nTimes)) write(*, *) "time exceeded!"
 
       if (endIndex > this%nTimes) endIndex = this%nTimes
 
@@ -727,49 +844,75 @@ contains
   ! Initialize AMIE file system
   ! --------------------------------------------------------------------
 
-  subroutine initialize_amie_files(fileNorth, fileSouth, iDebugLevel)
+  subroutine initialize_amie_files(nFilesNorth, filesNorth, nFilesSouth, filesSouth, iDebugLevel)
 
     implicit none
 
-    character(len=*), intent(in) :: fileNorth, fileSouth
+    integer, intent(in) :: nFilesNorth, nFilesSouth
+    character(len=iCharLenIE_), intent(in) :: filesNorth(nFilesNorth), filesSouth(nFilesSouth)
     integer, intent(in) :: iDebugLevel
     logical :: FileExists
-    integer :: iError
+    integer :: iError, iFile
 
     ! 1. set the debug level:
     AMIE_iDebugLevel = iDebugLevel
 
     ! 2. Define the variable names to look for in the files:
+    !    This is hardcoded stuff, so check this function to
+    !    understand what variables the code is looking for.
     call AMIE_link_variable_names()
 
     ! 2.5 Before the next step, let's make sure that AMIE files are set & exist
-    inquire(file=trim(fileNorth), exist=FileExists)
-    if (.not. FileExists) &
-      call set_error("Error: AMIE North file does not exist! Ensure it is set correctly. ")
+    nFiles = 0
+    do iFile = 1, nFilesNorth
+      inquire(file=trim(filesNorth(iFile)), exist=FileExists)
+      if (.not. FileExists) then
+        call set_error("Error: AMIE North file does not exist! Ensure it is set correctly. ")
+        call set_error(trim(filesNorth(iFile)))
+      else
+        nFiles = nFiles + 1
+      endif
+    enddo
 
-    inquire(file=trim(fileSouth), exist=FileExists)
-    if (.not. FileExists) &
-      call set_error("Error: AMIE South file does not exist! Ensure it is set correctly.")
+    do iFile = 1, nFilesSouth
+      if (trim(filesSouth(iFile)) /= 'mirror') then
+        inquire(file=trim(filesSouth(iFile)), exist=FileExists)
+        if (.not. FileExists) then
+          call set_error("Error: AMIE South file does not exist! Ensure it is set correctly.")
+          call set_error(filesSouth(iFile))
+        else
+          nFiles = nFiles + 1
+        endif
+      else
+        nFiles = nFiles + 1
+      endif
+    enddo
 
     ! 3. Initialize the Northern Hemisphere File:
 
-    allocate(allFiles(2), stat=iError)
+    allocate(allFiles(nFiles), stat=iError)
     if (iError /= 0) then
       call set_error("Error: allocating allFiles in initiailize_amie_files")
     endif
 
     ! isNorth = .true., isMirror = .false.
-    call allFiles(1)%init(fileNorth, .true., .false.)
-    call AMIE_link_vars_to_keys(allFiles(1))
+    do iFile = 1, nFilesNorth
+      call allFiles(iFile)%init(filesNorth(iFile), .true., .false.)
+      call AMIE_link_vars_to_keys(allFiles(iFile))
+    enddo
 
-    if (trim(fileSouth) == 'mirror') then
-      ! isNorth = .false., isMirror = .true.
-      call allFiles(2)%init(fileNorth, .false., .true.)
-    else
-      ! isNorth = .false., isMirror = .false.
-      call allFiles(2)%init(fileSouth, .false., .false.)
-    endif
-    call AMIE_link_vars_to_keys(allFiles(2))
+    do iFile = 1, nFilesSouth
+      if (trim(filesSouth(iFile)) == 'mirror') then
+        ! isNorth = .false., isMirror = .true.
+        if (AMIE_iDebugLevel > -1) &
+          write(*, *) " -> AMIE south file is mirror"
+        call allFiles(nFilesNorth + iFile)%init(filesNorth(iFile), .false., .true.)
+      else
+        ! isNorth = .false., isMirror = .false.
+        call allFiles(nFilesNorth + iFile)%init(filesSouth(iFile), .false., .false.)
+      endif
+      call AMIE_link_vars_to_keys(allFiles(nFilesNorth + iFile))
+    enddo
 
     return
 
@@ -784,20 +927,31 @@ contains
     implicit none
 
     class(amieFile) :: this
-    integer :: iField, iVal
+    integer :: iField, iVal, iName
+    logical :: isFound
 
-    do iVal = 1, nValues
-      if (AMIE_iDebugLevel > 1) &
-        write(*, *) '==> Searching for ', trim(AMIE_Names(iVal))
-      do iField = 1, this%nVars
-        if (index(this%varNames(iField), trim(AMIE_Names(iVal))) > 0) then
-          this%iMap_(iVal) = iField
-          if (AMIE_iDebugLevel > 1) &
-            write(*, *) "   <--- ", trim(AMIE_Names(iVal)), " Found", iField
+    do iField = 1, this%nVars
+      if (AMIE_iDebugLevel > 0) &
+        write(*, *) '==> Trying to match ->', trim(this%varNames(iField)), '<-'
+      isFound = .false.
+      do iName = 1, nNames
+        if ((AMIE_iDebugLevel > 0) .and. (.not. isFound)) &
+          write(*, *) '    --> comparing to ->', trim(AMIE_Names_List(iName)), '<-'
+
+        if ((index(trim(this%varNames(iField)), trim(AMIE_Names_List(iName))) > 0) .and. &
+            (index(trim(AMIE_Names_List(iName)), trim(this%varNames(iField))) > 0) .and. &
+            (.not. isFound)) then
+          this%iMap_(AMIE_Names_Mapper(iName)) = iField
+          isFound = .true.
+          ! Since we found the variable, let's kill it in the AMIE list:
+          if (AMIE_iDebugLevel > 0) then
+            write(*, *) "   <--- ", trim(AMIE_Names_List(iName)), " Found"
+            write(*, *) "     Amie field, list number : ", iField, AMIE_Names_Mapper(iName)
+          endif
         endif
       enddo
     enddo
-    if (AMIE_iDebugLevel > 1) then
+    if (AMIE_iDebugLevel > 0) then
       write(*, *) '==> Summary of variables found in AMIE file : '
       do iVal = 1, nValues
         if (this%iMap_(iVal) > 0) then
@@ -1021,8 +1175,11 @@ contains
 
     integer, intent(in) :: iVarToGetIn
     real, intent(inout) ::  valueOut(nMltsNeeded, nLatsNeeded)
-    integer :: iMlt, iLat, iB, iM, iL
+    integer :: iMlt, iLat, iB, iM, iL, iFile
     real :: dM, dL
+    logical :: isNorth
+
+    valueOut = 0.0
 
     do iMlt = 1, nMltsNeeded
       do iLat = 1, nLatsNeeded
@@ -1034,6 +1191,21 @@ contains
         dL = interpolationRatios(iMLT, iLat, 2)
 
         if (iB > 0) then
+
+          ! We need to figure out which block we should use, since
+          ! the find indices could only be called once.  Ugh.
+          ! At this point, assume all files / blocks have the same grid
+          if (allFiles(iB)%nTimesInMemory == 0) then
+            isNorth = allFiles(iB)%isNorth
+            ! We have nothing in memory for this file!
+            iB = 0
+            do iFile = 1, nFiles
+              if ((allFiles(iFile)%nTimesInMemory > 0) .and. &
+                  (allFiles(iFile)%isNorth .eqv. isNorth)) &
+                iB = iFile
+            enddo
+          endif
+
           ValueOut(iMLT, iLat) = &
             (1.0 - dM)*(1.0 - dL)*allFiles(iB)%dataOneTime(iVarToGetIn, iM, iL) + &
             (1.0 - dM)*(dL)*allFiles(iB)%dataOneTime(iVarToGetIn, iM, IL + 1) + &
