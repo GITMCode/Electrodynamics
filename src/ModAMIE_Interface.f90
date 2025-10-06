@@ -145,21 +145,34 @@ contains
 
     implicit none
 
+    ! All of the names for Potential:
     call add_to_list_and_mapper(iPotential_, "Potential")
     call add_to_list_and_mapper(iPotential_, "Potential (kV)")
     call add_to_list_and_mapper(iPotential_, "Potential (V)")
     call add_to_list_and_mapper(iPotential_, "Electric Potential")
     call add_to_list_and_mapper(iPotentialy_, "PotentialY")
+
+    ! All of the names for electron energy flux (diffuse):
     call add_to_list_and_mapper(iEle_diff_eflux_, "Electron Energy Flux")
     call add_to_list_and_mapper(iEle_diff_eflux_, "Electron Energy Flux (ergs/cm2")
+    call add_to_list_and_mapper(iEle_diff_eflux_, "Electron Energy Flux (mW/m2)")
     call add_to_list_and_mapper(iEle_diff_eflux_, "Auroral Energy Flux (er/cm2/s)")
+
+    ! All of the names for electron average energy (diffuse):
     call add_to_list_and_mapper(iEle_diff_avee_, "Electron Mean Energy")
     call add_to_list_and_mapper(iEle_diff_avee_, "Electron Mean Energy (keV)")
     call add_to_list_and_mapper(iEle_diff_avee_, "Auroral Mean Energy (keV)")
+
+    ! All of the names for ion energy flux:
     call add_to_list_and_mapper(iIon_diff_eflux_, "Ion Energy Flux")
     call add_to_list_and_mapper(iIon_diff_eflux_, "Ion Energy Flux (ergs/cm2/s)")
+    call add_to_list_and_mapper(iIon_diff_eflux_, "Ion Energy Flux (mW/m2)")
+
+    ! All of the names for ion average energy:
     call add_to_list_and_mapper(iIon_diff_avee_, "Ion Mean Energy")
     call add_to_list_and_mapper(iIon_diff_avee_, "Ion Mean Energy (keV)")
+    
+    ! Names for mono, waves, and polar cap:
     call add_to_list_and_mapper(iEle_mono_eflux_, "ME Energy Flux")
     call add_to_list_and_mapper(iEle_mono_eflux_, "ME Energy Flux (ergs/cm2/s)")
     call add_to_list_and_mapper(iEle_mono_avee_, "ME Mean Energy")
@@ -170,6 +183,7 @@ contains
     call add_to_list_and_mapper(iEle_wave_avee_, "BB Mean Energy (keV)")
     call add_to_list_and_mapper(iPolarCap_, "Polar Cap Indicator")
 
+    ! These are the "official" names for each data type (not searched for...)
     AMIE_Names(iPotential_) = "Potential"
     AMIE_Names(iPotentialy_) = "PotentialY"
     AMIE_Names(iEle_diff_eflux_) = "Electron Energy Flux"
