@@ -155,8 +155,6 @@ def read_all_rim_files(filelist):
     nTimes = len(filelist)
     dataOneFile = read_rim_ascii_file(filelist[0])
 
-    print(dataOneFile['vars'])
-
     nLats = dataOneFile['ntheta']
     nMlts = dataOneFile['nphi']
 
@@ -259,6 +257,8 @@ def read_all_rim_files(filelist):
     for iVar, rimVar in enumerate(rimVars):
         print('  ', rimVar, ' -> ', outVars[iVar])
 
+    nTimes = len(filelist)
+
     # These are the AMIE variable names to write that IE understands:
     dataToWriteN["Vars"] = outVars
     dataToWriteN["nVars"] = len(dataToWriteN["Vars"])
@@ -271,7 +271,7 @@ def read_all_rim_files(filelist):
     dataToWriteN["hem"] = 'N'
     dataToWriteN["times"] = []
     for var in dataToWriteN["Vars"]:
-        dataToWriteN[var] = []
+        dataToWriteN[var] = np.zeros((nTimes, nLats, nMlts))
 
     dataToWriteS["Vars"] = outVars
     iPot_ = 0
@@ -286,12 +286,17 @@ def read_all_rim_files(filelist):
     dataToWriteS["hem"] = 'S'
     dataToWriteS["times"] = []
     for var in dataToWriteS["Vars"]:
-        dataToWriteS[var] = []
+        dataToWriteS[var] = np.zeros((nTimes, nLats, nMlts))
 
     cPot = dataToWriteN["Vars"][iPot_]
     cEflux = dataToWriteN["Vars"][iEflux_]
 
-    for file in filelist:
+    print('-> Number of files to read : ', nTimes)
+    print('-> Number of lats to read : ', nLats)
+    print('-> Number of mlts to read : ', nMlts)
+    print('-> Number of variables to write : ', len(outVars))
+    
+    for iT, file in enumerate(filelist):
         dataOneFile = read_rim_ascii_file(file)
 
         # This allows us to identify the open field-line region
@@ -322,8 +327,11 @@ def read_all_rim_files(filelist):
         for iVar, rimVar in enumerate(rimVars):
             amieVar = dataToWriteN["Vars"][iVar]
             fac = unitFactors[iVar]
-            dataToWriteN[amieVar].append(fac * dataOneFile['n_' + rimVar])
-            dataToWriteS[amieVar].append(fac * np.flip(dataOneFile['s_' + rimVar], 0))
+            dataToWriteN[amieVar][iT, :, :] = \
+                (fac * dataOneFile['n_' + rimVar])
+            dataToWriteS[amieVar][iT, :, :] = \
+                (fac * np.flip(dataOneFile['s_' + rimVar], 0))
+
         dataToWriteN['times'].append(dataOneFile['time'])
         dataToWriteS['times'].append(dataOneFile['time'])
         
@@ -346,7 +354,7 @@ def read_all_rim_files(filelist):
         
     dataToWriteN['nTimes'] = len(dataToWriteN['times'])
     dataToWriteS['nTimes'] = len(dataToWriteS['times'])
-        
+
     return dataToWriteN, dataToWriteS
 
 
