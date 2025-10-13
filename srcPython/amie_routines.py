@@ -29,6 +29,8 @@ def read_record_string(fp):
 
 def amie_read_binary(file):
 
+    print('Reading AMIE File : ', file)
+
     f = open(file, 'rb')
 
     data = {}
@@ -46,6 +48,9 @@ def amie_read_binary(file):
 
     data["nVars"] = read_record_long(f, 1)[0]
 
+    print('  --> nLats, nMlts, nTimes, nVars : ', \
+          data["nLats"],  data["nMlts"], data["nTimes"], data["nVars"])
+    
     data["Vars"] = []
 
     for i in np.arange(data["nVars"]):
