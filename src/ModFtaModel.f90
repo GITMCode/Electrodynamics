@@ -173,6 +173,11 @@ contains
     allocate(eflux(nMltsFta, nLatsFta))
     allocate(avee(nMltsFta, nLatsFta))
 
+    eflux = 0.0
+    avee = 2.0
+    lbhl = 0.0
+    lbhs = 0.0
+
     call calc_full_patterns(mlats0_l, efs0_l, mlats0_s, efs0_s, &
                             lbhl, lbhs, eflux, avee, polarcap)
 
