@@ -212,6 +212,9 @@ contains
     integer :: UnitTmp_ = 76
     integer :: iError = 0
 
+    if (this%iDebugLevel >= 0) &
+      write(*, *) "> Initializing IE Library"
+
     if (this%iDebugLevel > 1) &
       write(*, *) "==> Model data directory : ", trim(this%modelDir)
 
@@ -226,6 +229,7 @@ contains
     if (this%iEfield_ == iWeimer05_) then
       call read_all_files(this%modelDir)
       this%doReadMHD = .true.
+      if (this%iDebugLevel >= 0) write(*, *) " => Weimer Initialized"
     endif
 
     ! -------------------------
@@ -244,6 +248,7 @@ contains
         call gethmr(UnitTmp_)
         close(UnitTmp_)
       endif
+      if (this%iDebugLevel >= 0) write(*, *) " => HepMay Initialized"
     endif
 
     ! ------------------
@@ -251,6 +256,7 @@ contains
     if ((this%iEfield_ == iAmiePot_) .or. (this%iAurora_ == iAmieAur_)) then
       call initialize_amie_files(this%nFilesNorth, this%northFiles, &
                                  this%nFilesSouth, this%southFiles, this%iDebugLevel)
+      if (this%iDebugLevel >= 0) write(*, *) " => AMIE Files Initialized"
     endif
 
     !\
@@ -264,6 +270,7 @@ contains
       modelDirTotal = this%modelDirFta
       call merge_str(this%modelDir, modelDirTotal)
       call initialize_fta(modelDirTotal)
+      if (this%iDebugLevel >= 0) write(*, *) " => FTA Initialized"
     endif
 
     if (this%iAurora_ == iFRE_) then
@@ -271,6 +278,7 @@ contains
 
       name = 'ihp'
       call read_conductance_model(name, this%modelDir, this%iDebugLevel)
+      if (this%iDebugLevel >= 0) write(*, *) " => IHP Initialized"
     endif
 
     if (this%iAurora_ == iPEM_) then
@@ -278,10 +286,12 @@ contains
 
       name = 'pem'
       call read_conductance_model(name, this%modelDir, this%iDebugLevel)
+      if (this%iDebugLevel >= 0) write(*, *) " => PEM Initialized"
     endif
 
     if (this%iAurora_ == iOvationPrime_) then
       call init_newell(this%modelDir, this%iDebugLevel)
+      if (this%iDebugLevel >= 0) write(*, *) " => OVATION Initialized"
     endif
 
   end subroutine initialize
