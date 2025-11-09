@@ -294,7 +294,6 @@
     endif
 
     ie%havePolarCap = 0.0
-
     if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE, ie%havePolarCap)
     ! These two models are the same, because they use the same
     if (ie%iAurora_ == iFRE_) call ie%hpi_pem(eFlux, AveE)
@@ -476,6 +475,9 @@
                     ie%neednLats), intent(inout) :: AveE
     real :: eFluxVal, AveEVal, hp
     integer :: iError = 0, iMlt, iLat
+
+    eFlux = 0.0
+    AveE = 2.0
 
     do iMLT = 1, ie%neednMLTs
       do iLat = 1, ie%neednLats
