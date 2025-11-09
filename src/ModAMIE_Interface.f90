@@ -171,7 +171,7 @@ contains
     ! All of the names for ion average energy:
     call add_to_list_and_mapper(iIon_diff_avee_, "Ion Mean Energy")
     call add_to_list_and_mapper(iIon_diff_avee_, "Ion Mean Energy (keV)")
-    
+
     ! Names for mono, waves, and polar cap:
     call add_to_list_and_mapper(iEle_mono_eflux_, "ME Energy Flux")
     call add_to_list_and_mapper(iEle_mono_eflux_, "ME Energy Flux (ergs/cm2/s)")
@@ -216,8 +216,14 @@ contains
     this%isNorth = isNorthIn
     this%isMirror = isMirrorIn
 
-    if (AMIE_iDebugLevel > -1) &
-      write(*, *) "> Initializing AMIE file system with file : ", trim(fileIn)
+    if (AMIE_iDebugLevel > -1) then
+      if (isNorthIn) then
+        write(*, *) " => Reading AMIE file (north) : ", trim(fileIn)
+      else
+        write(*, *) " => Reading AMIE file (south) : ", trim(fileIn)
+      endif
+      if (isMirrorIn) write(*, *) "  ==> This file is a mirror"
+    endif
 
     call read_amie_header(this)
     call read_amie_times(this)
@@ -918,8 +924,6 @@ contains
     do iFile = 1, nFilesSouth
       if (trim(filesSouth(iFile)) == 'mirror') then
         ! isNorth = .false., isMirror = .true.
-        if (AMIE_iDebugLevel > -1) &
-          write(*, *) " -> AMIE south file is mirror"
         call allFiles(nFilesNorth + iFile)%init(filesNorth(iFile), .false., .true.)
       else
         ! isNorth = .false., isMirror = .false.
@@ -1003,7 +1007,7 @@ contains
     if ((this%iMap_(iEle_wave_eflux_) > 0) .and. (this%iMap_(iEle_wave_avee_) > 0)) then
       this%hasWave = .true.
       if (AMIE_iDebugLevel > 1) &
-        write(*, *) "==> Input Electrodynamics is using Ions!"
+        write(*, *) "==> Input Electrodynamics is using Waves!"
     else
       this%hasWave = .false.
     endif
