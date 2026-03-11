@@ -112,6 +112,7 @@ MODULE ModIE
     logical :: useAeForHp = .false.
 
     real :: weimerTilt = 0.0
+    real :: LatBoundPotential = 50.0  ! Magnetic latitude boundary (default 45 deg)
 
     ! ----------------------------------------------------------------
     ! To make the indices reading/retrieving a bit more more modular

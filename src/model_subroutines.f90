@@ -154,7 +154,11 @@
       return
     endif
 
-    if (ie%iEfield_ == iWeimer05_) call ie%weimer05(potential)
+    if (ie%iEfield_ == iWeimer05_) then
+      call ie%weimer05(potential)
+    else
+      ie%LatBoundPotential = 45.0
+    endif
     if (ie%iEfield_ == iHepMay_) call ie%hepmay(potential)
 
     if (ie%iEfield_ == iAmiePot_) call get_amie_potential(potential)
@@ -167,6 +171,7 @@
   ! ------------------------------------------------------------
   ! run Weimer05
   subroutine run_weimer05_model(ie, potential)
+    use w05sc, only: get_weimer_boundary
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(inout) :: potential
@@ -177,20 +182,23 @@
 
     do iMLT = 1, ie%neednMLTs
       do iLat = 1, ie%neednLats
-        if (abs(ie%needLats(iMlt, iLat)) > 45.0) then
-          ! this is to check if we have changed hemispheres:
-          currentTilt = sign(ie%weimerTilt, ie%needLats(iMlt, iLat))
-          if (currentTilt .ne. lastTilt) then
-            ! Only need to set up the model once, when everything
-            ! stays the same (including the hemisphere!):
-            call setmodel( &
-              ie%needIMFBy, &
-              ie%needIMFBz, &
-              currentTilt, &
-              ie%needSWV, &
-              ie%needSWN, 'epot')
-            lastTilt = currentTilt
-          endif
+        ! this is to check if we have changed hemispheres:
+        currentTilt = sign(ie%weimerTilt, ie%needLats(iMlt, iLat))
+        if (currentTilt .ne. lastTilt) then
+          ! Only need to set up the model once, when everything
+          ! stays the same (including the hemisphere!):
+          call setmodel( &
+            ie%needIMFBy, &
+            ie%needIMFBz, &
+            currentTilt, &
+            ie%needSWV, &
+            ie%needSWN, 'epot')
+          ! Get the actual Weimer boundary (in magnetic latitude)
+          ie%LatBoundPotential = get_weimer_boundary()
+          lastTilt = currentTilt
+        endif
+        ! Only calculate potential where abs(lat) is above the model boundary
+        if (abs(ie%needLats(iMlt, iLat)) >= ie%LatBoundPotential) then
           ! Run Weimer for specific lat and mlt:
           call epotval( &
             abs(ie%needLats(iMlt, iLat)), &
@@ -221,7 +229,7 @@
     iFirst = 1
     do iMLT = 1, ie%neednMLTs
       do iLat = 1, ie%neednLats
-        if (abs(ie%needLats(iMlt, iLat)) > 50.0) then
+        if (abs(ie%needLats(iMlt, iLat)) > ie%LatBoundPotential) then
           call hmrepot( &
             ie%needLats(iMlt, iLat), &
             ie%needMlts(iMlt, iLat), &
