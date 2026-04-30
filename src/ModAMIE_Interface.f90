@@ -33,7 +33,8 @@ Module ModAMIE_Interface
   integer, parameter :: iEle_wave_eflux_ = 9
   integer, parameter :: iEle_wave_avee_ = 10
   integer, parameter :: iPolarCap_ = 11
-  integer, parameter :: nValues = 11
+  integer, parameter :: iFieldAlignedCurrent_ = 12
+  integer, parameter :: nValues = 12
   integer, parameter :: nNamesMax = 200
   integer :: nNames = 0
 
@@ -183,6 +184,11 @@ contains
     call add_to_list_and_mapper(iEle_wave_avee_, "BB Mean Energy (keV)")
     call add_to_list_and_mapper(iPolarCap_, "Polar Cap Indicator")
 
+
+    ! Names for mono, waves, and polar cap:
+    call add_to_list_and_mapper(iFieldAlignedCurrent_, "Field Aligned Current (mW/m2)")
+    ! call add_to_list_and_mapper(iFieldAlignedCurrent_, "Field Aligned Current (mW/m2)")
+
     ! These are the "official" names for each data type (not searched for...)
     AMIE_Names(iPotential_) = "Potential"
     AMIE_Names(iPotentialy_) = "PotentialY"
@@ -195,6 +201,7 @@ contains
     AMIE_Names(iEle_wave_eflux_) = "BB Energy Flux"
     AMIE_Names(iEle_wave_avee_) = "BB Mean Energy"
     AMIE_Names(iPolarCap_) = "Polar Cap Indicator"
+    AMIE_Names(iFieldAlignedCurrent_) = "Field Aligned Current"
 
   end subroutine AMIE_link_variable_names
 
@@ -1345,6 +1352,17 @@ contains
       write(*, *) "=> Getting Polar Cap from AMIE"
     call get_amie_values(iPolarCap_, polarCapOut)
   end subroutine get_amie_polar_cap
+
+  ! --------------------------------------------------------------------
+  ! Get Field Aligned Current
+  ! --------------------------------------------------------------------
+
+  subroutine get_amie_fac(fieldAlignedCurrentOut)
+    real, intent(inout) ::  fieldAlignedCurrentOut(nMltsNeeded, nLatsNeeded)
+    if (AMIE_iDebugLevel > 3) &
+      write(*, *) "=> Getting FAC from AMIE"
+    call get_amie_values(iFieldAlignedCurrent_, fieldAlignedCurrentOut)
+  end subroutine get_amie_fac
 
 end Module ModAMIE_Interface
 
