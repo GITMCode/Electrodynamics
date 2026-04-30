@@ -433,6 +433,26 @@
     return
   end subroutine get_polarcap_results
 
+
+  subroutine get_fac_results(ie, facs)
+    use ModAMIE_Interface, only: get_amie_fac
+
+    class(ieModel) :: ie
+    real, dimension(ie%neednMlts, &
+                    ie%neednLats), intent(out) :: facs
+
+    facs = 0.0
+
+    if (ie%iAurora_ == iAmieAur_) then
+      call get_amie_fac(facs)
+    else
+      ! this should be set in FTA model, then
+       call set_error("FACs are experimental & only supported with AMIE aurora currently")
+    endif
+
+    return
+  end subroutine get_fac_results
+
   ! ------------------------------------------------------------
   ! run FTA Model, providing aveE and E-Flux
   subroutine run_fta_model(ie, eFlux, AveE, polarCap)

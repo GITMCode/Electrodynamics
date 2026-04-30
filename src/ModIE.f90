@@ -191,6 +191,7 @@ MODULE ModIE
     procedure :: fta => run_fta_model
     procedure :: hpi_pem => run_hpi_pem_model
     procedure :: get_polarcap => get_polarcap_results
+    procedure :: get_FACs => get_fac_results
     procedure :: ovation_e_diffuse => run_ovation_model_electron_diffuse
     procedure :: ovation_e_mono => run_ovation_model_electron_mono
     procedure :: ovation_e_wave => run_ovation_model_electron_wave
