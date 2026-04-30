@@ -149,7 +149,7 @@ def read_rim_ascii_file(filename):
 # Read and extract needed information from SWMF / RIM files
 #------------------------------------------------------------------------------
 
-def read_all_rim_files(filelist):
+def read_all_rim_files(filelist, doFACs=False):
 
     # Let's get some information before starting this:
     nTimes = len(filelist)
@@ -199,6 +199,11 @@ def read_all_rim_files(filelist):
     #   W/m2 -> ergs/cm2/s = 1000.0
     #   keV -> keV = 1.0
     unitFactors = [1000.0, 1000.0, 1.0]
+
+    if doFACs:
+        rimVars.append('jr')
+        outVars.append('Field Aligned Current (mW/m2)')
+        unitFactors.append(1.0)
 
     # New files redeine things:
     if ('e-flux-diffe' in dataOneFile['vars']):

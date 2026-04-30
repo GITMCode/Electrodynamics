@@ -23,6 +23,11 @@ def parse_args():
                         default = 1000, type = float, \
                         help = 'maximum file size in MB') 
 
+    parser.add_argument('-facs',  \
+                        action = 'store_true', \
+                        help = "Process & store FAC's too")
+    
+
     # variable to plot as a number
     parser.add_argument('-name',  \
                         default = 'swmf', \
@@ -47,7 +52,7 @@ if (len(filelist) <= 1):
     print(' --> Checking for gz files:')
     filelist = sorted(glob(args.dir + '/it*.gz'))
 
-dataToWriteN, dataToWriteS = read_all_rim_files([filelist[0]])
+dataToWriteN, dataToWriteS = read_all_rim_files([filelist[0]], doFACs=args.facs)
 
 print('  --> Figuring out how many chunks to make')
 vars = dataToWriteS["Vars"]
@@ -69,7 +74,8 @@ while (iStart < len(filelist)):
     if (iEnd > len(filelist)):
         iEnd = len(filelist)
 
-    dataToWriteN, dataToWriteS = read_all_rim_files(filelist[iStart:iEnd])
+    dataToWriteN, dataToWriteS = read_all_rim_files(filelist[iStart:iEnd],
+                                                     doFACs=args.facs)
     if (iStart == 0):
         ymd = dataToWriteN['times'][0].strftime('%Y%m%d')
     if ((iStart == 0) and (iEnd == len(filelist))):
