@@ -143,6 +143,8 @@ contains
 
   subroutine AMIE_link_variable_names()
 
+    ! The maximum length for variable names is 30
+
     implicit none
 
     ! All of the names for Potential:
