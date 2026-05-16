@@ -414,6 +414,7 @@ contains
     real :: dPotential
 
     integer :: i, j, iField, n, iVal, iT
+    integer(4) :: recl_start, recl_end ! record start/end length, pads all data
 
     doReadMore = .false.
 
@@ -455,7 +456,8 @@ contains
       open(iUnitAmie_, &
            file=this%fileName, &
            status='old', &
-           form='UNFORMATTED', &
+           access='stream', &
+           form='unformatted', &
            iostat=iError)
 
       if (iError /= 0) then
@@ -469,9 +471,10 @@ contains
       do iTime = startIndex, endIndex
         iT = iTime - startIndex + 1
         iFilePos = this%headerLength + this%oneTimeLength*(iTime - 1)
-        ! removed +8 in line below this!
-        CALL FSEEK(iUnitAmie_, iFilePos, 0, iError)  ! move to OFFSET
-        read(iUnitAmie_) ntemp, iyr, imo, ida, ihr, imi
+        ! Stream seek to the start of this time block, then read the first
+        ! (time-stamp) record, bracketed by its 4-byte length markers.
+        read(iUnitAmie_, pos=iFilePos + 1) &
+          recl_start, ntemp, iyr, imo, ida, ihr, imi, recl_end
         if (AMIE_iDebugLevel > 2) &
           write(*, *) '====> Reading AMIE time : ', &
           ntemp, iyr, imo, ida, ihr, imi
@@ -489,20 +492,22 @@ contains
 
         ! We don't care about these,
         ! but read them to move forward in the file:
-        read(iUnitAmie_) swv, bx, by, bz, aei, ae, au, al, &
-          dsti, dst, hpi, sjh, pot
+        read(iUnitAmie_) recl_start, swv, bx, by, bz, aei, ae, au, al, &
+          dsti, dst, hpi, sjh, pot, recl_end
 
         do iField = 1, this%nVars
           if (this%ReverseLats) then
-            read(iUnitAmie_) &
+            read(iUnitAmie_) recl_start, &
               ((AllDataOneTime(j, i, iField), &
                 j=1, this%nMlts), &
-               i=this%nLats, 1, -1)
+               i=this%nLats, 1, -1), &
+              recl_end
           else
-            read(iUnitAmie_) &
+            read(iUnitAmie_) recl_start, &
               ((AllDataOneTime(j, i, iField), &
                 j=1, this%nMlts), &
-               i=1, this%nLats)
+               i=1, this%nLats),
+            recl_end
           endif
         enddo
 
@@ -609,6 +614,7 @@ contains
     integer :: iFilePos
     integer, dimension(7) :: itime_i
     real(kind=Real8_) :: rtime
+    integer(4) :: recl_start, recl_end
 
     if (AMIE_iDebugLevel > 1) &
       write(*, *) "==> Opening AMIE file to read times : ", trim(this%fileName)
@@ -616,7 +622,8 @@ contains
     open(iUnitAmie_, &
          file=this%fileName, &
          status='old', &
-         form='UNFORMATTED', &
+         access='stream', &
+         form='unformatted', &
          iostat=iError)
 
     if (iError /= 0) then
@@ -628,9 +635,10 @@ contains
     do iTime = 1, this%ntimes
 
       iFilePos = this%headerLength + this%oneTimeLength*(iTime - 1)
-      ! removed +8
-      CALL FSEEK(iUnitAmie_, iFilePos, 0, iError)  ! move to OFFSET
-      read(iUnitAmie_) ntemp, iyr, imo, ida, ihr, imi
+      ! Stream seek to the start of this time block, then read the first record
+      ! (time-stamp), bracketed by its 4-byte length markers.
+      read(iUnitAmie_, pos=iFilePos + 1) &
+        recl_start, ntemp, iyr, imo, ida, ihr, imi, recl_end
       if (AMIE_iDebugLevel > 2) then
         write(*, *) '====> Reading AMIE time : ', ntemp, iyr, imo, ida, ihr, imi
         write(*, *) '====> At file position: ', iFilePos, '  <===='
@@ -666,9 +674,7 @@ contains
     integer :: iError = 0, iVar, i, tmp_amiepos
     real*4, allocatable, dimension(:) :: TempLats
 
-    character(len=5000) :: line
-    integer(4) recl_at_start, recl_at_end, nLinesInHeader, iLine
-    CHARACTER*32 MSG
+    integer(4) :: recl_start, recl_end
 
     if (AMIE_iDebugLevel > 1) &
       write(*, *) "==> Opening AMIE file to read header : ", trim(this%fileName)
@@ -676,7 +682,8 @@ contains
     open(iUnitAmie_, &
          file=this%fileName, &
          status='old', &
-         form='UNFORMATTED', &
+         access='stream', &
+         form='unformatted', &
          iostat=iError)
 
     if (iError /= 0) then
@@ -685,8 +692,11 @@ contains
       return
     endif
 
+    ! Each record is bracketed by an (int4) length marker;
+    ! These are read into recl_start / recl_end around every data we want
+
     ! Read nLats, nMlts, and nTimes
-    read(iUnitAmie_) this%nLats, this%nMlts, this%nTimes
+    read(iUnitAmie_) recl_start, this%nLats, this%nMlts, this%nTimes, recl_end
 
     if (AMIE_iDebugLevel > 2) &
       write(*, *) "==> nLats, nMlts, nTimes : ", &
@@ -708,12 +718,14 @@ contains
       return
     endif
 
-    read(iUnitAmie_) (this%lats(i), i=1, this%nLats)
+    read(iUnitAmie_) &
+      recl_start, (this%lats(i), i=1, this%nLats), recl_end, & ! lats
+      recl_start, (this%mlts(i), i=1, this%nMlts), recl_end, & ! mlt
+      recl_start, this%nVars, recl_end ! number of vars
     this%lats = 90.0 - this%lats
-    read(iUnitAmie_) (this%mlts(i), i=1, this%nMlts)
-    read(iUnitAmie_) this%nVars
+
     do iVar = 1, this%nVars
-      read(iUnitAmie_) this%varNames(iVar)
+      read(iUnitAmie_) recl_start, this%varNames(iVar), recl_end
       if (AMIE_iDebugLevel > 0) &
         write(*, *) "==> AMIE Variable : ", iVar, this%varNames(iVar)
     enddo
@@ -788,63 +800,25 @@ contains
     if (AMIE_iDebugLevel > 2) &
       write(*, *) 'calculated header length : ', this%headerLength
 
-    ! But, we noticed that the variable names can be any length, as
-    ! long as they are longer than 30 characters.  This means that the
-    ! exact length of the header is dependent on these string lengths,
-    ! which are hard to measure.  So, instead of calculating the
-    ! header length, just assign it to the current file position since
-    ! we are at the exact end of the header now:
-    ! amie_file_loc =
-    ! this % headerLength = ftell(iUnitAmie_)
+    ! Measure the actual header length:
+    ! inquire(pos=X) on a access='stream' file returns the position of the next
+    ! read indexed from 1, so our location is pos - 1.
+    ! Replaces an earlier `ftell` call since ifort/ifx/nagfor returned garbage.
+    inquire(unit=iUnitAmie_, pos=tmp_amiepos)
+    tmp_amiepos = tmp_amiepos - 1
 
-    ! ALB coming here and changing things. `ftell` doesn't work with nagfor, but the
-    !! "easy" replacement with this doesn't seem to be working either. So this block
-    !! can probably be deleted.
-    !INQUIRE(UNIT=iUnitAmie_, RECL=i) !get record length (header size)
-    !write(*,*) "===>> Found Header length: ", i
-    ! this % headerLength = i
-    !! Or use this to get the index of next record  (breaks when there are multiple times):
-    ! INQUIRE(UNIT=iUnitAmie_, NEXTREC=i) !get next record
-
-    call ftell(iUnitAmie_, tmp_amiepos)
     if (AMIE_iDebugLevel >= 1) &
-      write(*, *) ' --> current AMIE file position (ftell) : ', tmp_amiepos
+      write(*, *) ' --> current AMIE file position (inquire) : ', tmp_amiepos
 
     close(iUnitAmie_)
-
-    if (tmp_amiepos <= 0) then
-      ! ftell doesn't seem to work on all systems. So, try this instead:
-      !! Try this the hard way:
-      open(iUnitAmie_, &
-           file=this%fileName, &
-           action='read', &
-           access='stream', &
-           iomsg=msg, &
-           iostat=iError)
-
-      nLinesInHeader = 4 + this%nVars
-
-      tmp_amiepos = 0
-      do iLine = 1, nLinesInHeader
-        read(iUnitAmie_) recl_at_start
-        read(iUnitAmie_) line(1:recl_at_start)
-        read(iUnitAmie_) recl_at_end
-        tmp_amiepos = tmp_amiepos + recl_at_start + 4 + 4
-      enddo
-
-      if (AMIE_iDebugLevel >= 1) &
-        write(*, *) ' --> tmp_amiepos, the hard way : ', tmp_amiepos
-
-      close(iUnitAmie_)
-    endif
 
     if (tmp_amiepos .ne. this%headerLength) then
       if (AMIE_iDebugLevel > -1) then
         write(*, *) 'WARNING ---->>>> AMIE file header length is strange!'
-        write(*, *) '   header length : ', this%headerLength
-        write(*, *) '   tmp_amiepos : ', tmp_amiepos
-        write(*, *) '   -> forcing length to actual instead of calculated!'
-        write(*, *) '   -> if code dies, then complain to Aaron!'
+        write(*, *) '   calculated header length : ', this%headerLength
+        write(*, *) '   measured length : ', tmp_amiepos
+        write(*, *) '   -> forcing length to measured instead of calculated!'
+        write(*, *) '   -> if code dies or behaves unexpectedly, then complain to Aaron!'
       endif
       this%headerLength = tmp_amiepos
     endif
