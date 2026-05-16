@@ -508,8 +508,8 @@ contains
             read(iUnitAmie_) recl_start, &
               ((AllDataOneTime(j, i, iField), &
                 j=1, this%nMlts), &
-               i=1, this%nLats),
-            recl_end
+               i=1, this%nLats), &
+              recl_end
           endif
         enddo
 
