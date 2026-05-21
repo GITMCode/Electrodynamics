@@ -1,4 +1,6 @@
 
+.PHONY: default ALL LIB cleanall rundir
+
 default : ALL
 
 include build/Makefile.def
