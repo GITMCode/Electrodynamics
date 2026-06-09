@@ -1,4 +1,6 @@
 
+.PHONY: default ALL LIB cleanall rundir
+
 default : ALL
 
 # This defines the directory structures:
