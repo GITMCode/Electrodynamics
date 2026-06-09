@@ -3,12 +3,12 @@ default : LIB
 
 #include ../build/Makefile.def
 
-include ../../../Makefile.def
-include ../../../Makefile.conf
+include ${DIRSFILE}
+include ${BUILDDIR}/Makefile.conf
 
 include Makefile.DEPEND
 
-MYLIB = ../lib/libIE.a
+MYLIB = ${LIBDIR}/libIE.a
 
 OBJECTS = \
 	ModKind.o\
@@ -33,7 +33,7 @@ DEPEND:
 	@perl ${SCRIPTDIR}/depend.pl  ${SEARCH} ${LIBDIR} ${OBJECTS}
 
 LIB:
-	@make ${MYLIB}
+	@make DIRSFILE=${DIRSFILE} ${MYLIB}
 	@echo
 
 ${MYLIB}: ${OBJECTS}
@@ -44,4 +44,4 @@ ${MYLIB}: ${OBJECTS}
 	${AR} ${MYLIB} ${OBJECTS}
 
 SHARELIB: DEPEND
-	@make ${MYLIB}
+	@make DIRSFILE=${DIRSFILE} ${MYLIB}
