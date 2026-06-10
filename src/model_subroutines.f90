@@ -184,7 +184,7 @@
             ! Only need to set up the model once, when everything
             ! stays the same (including the hemisphere!):
             call setmodel( &
-              ie%needIMFBy, &
+              ie%needIMFBy * sign(1.0, ie%needLats(iMlt, iLat)), &
               ie%needIMFBz, &
               currentTilt, &
               ie%needSWV, &
