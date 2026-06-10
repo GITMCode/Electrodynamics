@@ -30,7 +30,13 @@ OBJECTS = \
 	interpret_names.o
 
 DEPEND:
-	@perl ${SCRIPTDIR}/depend.pl  ${SEARCH} ${LIBDIR} ${OBJECTS}
+	@if [ -f "${SCRIPTDIR}/depend.pl" ]; then \
+		perl ${SCRIPTDIR}/depend.pl ${SEARCH} ${LIBDIR} ${OBJECTS}; \
+	else \
+		perl ../../../scripts/mkdepends . ext && mv Depends Makefile.DEPEND; \
+	fi
+
+Makefile.DEPEND: DEPEND
 
 LIB:
 	@make ${MYLIB}
