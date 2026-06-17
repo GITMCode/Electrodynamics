@@ -5,6 +5,9 @@ COMPILE.f90     = gfortran
 LINK.f90        = mpif90
 AR = ar -rs
 
+DOUBLEPREC = -fdefault-real-8 -fdefault-double-8
+PRECISION  = ${DOUBLEPREC}
+
 OPT0 = -O0
 OPT1 = -O1
 OPT2 = -O2

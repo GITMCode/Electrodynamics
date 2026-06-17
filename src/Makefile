@@ -1,14 +1,19 @@
 
-default : LIB
+default: LIB
 
-#include ../build/Makefile.def
+ifeq ($(wildcard ../build/Makefile.local),)
+  $(error ../build/Makefile.local not found. Run config.sh from the Electrodynamics root to configure.)
+endif
+include ../build/Makefile.local
 
-include ${DIRSFILE}
-include ${BUILDDIR}/Makefile.conf
+include $(DIRSFILE)
+ifneq ($(wildcard $(BUILDDIR)/Makefile.conf),)
+  include $(BUILDDIR)/Makefile.conf
+endif
 
 include Makefile.DEPEND
 
-MYLIB = ${LIBDIR}/libIE.a
+MYLIB = ../lib/libIE.a
 
 OBJECTS = \
 	ModKind.o\
@@ -33,7 +38,7 @@ DEPEND:
 	@perl ${SCRIPTDIR}/depend.pl  ${SEARCH} ${LIBDIR} ${OBJECTS}
 
 LIB:
-	@make DIRSFILE=${DIRSFILE} ${MYLIB}
+	@make DIRSFILE=${DIRSFILE} BUILDDIR=${BUILDDIR} ${MYLIB}
 	@echo
 
 ${MYLIB}: ${OBJECTS}
@@ -44,4 +49,4 @@ ${MYLIB}: ${OBJECTS}
 	${AR} ${MYLIB} ${OBJECTS}
 
 SHARELIB: DEPEND
-	@make DIRSFILE=${DIRSFILE} ${MYLIB}
+	@make DIRSFILE=${DIRSFILE} BUILDDIR=${BUILDDIR} ${MYLIB}
