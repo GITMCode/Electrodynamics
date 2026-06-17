@@ -33,53 +33,11 @@ Products that can be provided:
 
 ## Configuring & Compiling
 
-Electrodynamics can be run on two modes, either standalone (mostly for reference and
-debugging) or coupled to other models.
+Electrodynamics can be run in two different modes; either standalone (mostly for
+reference and debugging) or coupled to other models.
 
-### Standalone
-
-Run the config script after cloning:
-
-    ./config.sh --compiler=gfortran   # or nagfor
-
-This copies the appropriate compiler rules into `build/Makefile.conf` and
-writes `build/Makefile.local`, which the build system requires.  Then build:
-
-    make
-
-To rebuild from scratch:
-
-    make clean
-    make
-
-### Coupled to a host model (GITM, TIEGCM, etc.)
-
-The host model's configure step writes `build/Makefile.local` automatically —
-no separate step inside this repo is needed.  Just run the host model's
-configure script (e.g. `./Config.pl -install` in GITM) and then build the
-host model as usual.
-
-### Coupling to a new host model
-
-Three steps in your host model's configure script:
-
-1. Write `build/Makefile.local` pointing to your build config
-
-```make
-    BUILDDIR  := /path/to/your/build/dir       # must contain Makefile.conf
-    DIRSFILE := /path/to/your/Makefile.dirs    # path/directory variables
-
-    # Or using the SWMF-style build system:
-    DIRSFILE := /path/to/your/Makefile.def    # path/directory variables
-```
-
-2. Touch `src/Makefile.DEPEND` so make can include it:
-
-        touch /path/to/ext/Electrodynamics/src/Makefile.DEPEND
-
-3. Build the library (from your configure script or top-level Makefile):
-
-        cd /path/to/ext/Electrodynamics && make LIB
+If this repo was cloned automatically, it should "just work". Ensure you are configuring
+with the correct flags.
 
 ### How it works
 
@@ -94,3 +52,43 @@ It contains two variables:
 For standalone builds all three files live in this repo's `build/` directory.
 For coupled builds, `DIRSFILE` and `BUILDDIR` point into the host model's tree
 so that the host model's compiler settings are used.
+
+### Standalone
+
+Run the config script after cloning:
+
+    ./config.sh --compiler=gfortran   # or nagfor
+
+This copies the appropriate compiler rules into `build/Makefile.conf` and
+writes `build/Makefile.local`.
+
+Then build:
+
+    make
+
+To rebuild from scratch:
+
+    make clean
+    make
+
+### How to couple to a new host model
+
+Three steps in your host model's configure script:
+
+1. Write `build/Makefile.local` pointing to your build config
+
+```make
+    BUILDDIR  := /path/to/your/build/dir       # must contain Makefile.conf
+    DIRSFILE := /path/to/your/Makefile.dirs    # path/directory variables
+
+    # Or using the SWMF-style build system:
+    DIRSFILE := /path/to/your/Makefile.def     # path/directory variables
+```
+
+2. Touch `src/Makefile.DEPEND` so make can include it (optionally generate its contents):
+
+        touch /path/to/ext/Electrodynamics/src/Makefile.DEPEND
+
+3. Build the library (put this into host model's Makefile):
+
+        cd /path/to/ext/Electrodynamics && make LIB
