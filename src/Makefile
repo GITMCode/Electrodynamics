@@ -37,8 +37,10 @@ OBJECTS = \
 DEPEND:
 	@if [ -f "${SCRIPTDIR}/depend.pl" ]; then \
 		perl ${SCRIPTDIR}/depend.pl ${SEARCH} ${LIBDIR} ${OBJECTS}; \
-	else \
+	elif [ -f "${SCRIPTDIR}/mkdepends" ]; then \
 		perl ${SCRIPTDIR}/mkdepends . ext && mv Depends Makefile.DEPEND; \
+	else \
+		touch Makefile.DEPEND; \
 	fi
 
 Makefile.DEPEND: DEPEND
