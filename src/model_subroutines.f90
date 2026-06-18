@@ -179,12 +179,12 @@
       do iMLT = 1, ie%neednMLTs
         if (abs(ie%needLats(iMlt, iLat)) > 45.0) then
           ! this is to check if we have changed hemispheres:
-          currentTilt = ie%weimerTilt * sign(1.0,  ie%needLats(iMlt, iLat))
+          currentTilt = ie%weimerTilt*sign(1.0, ie%needLats(iMlt, iLat))
           if (currentTilt .ne. lastTilt) then
             ! Only need to set up the model once, when everything
             ! stays the same (including the hemisphere!):
             call setmodel( &
-              ie%needIMFBy * sign(1.0, ie%needLats(iMlt, iLat)), &
+              ie%needIMFBy*sign(1.0, ie%needLats(iMlt, iLat)), &
               ie%needIMFBz, &
               currentTilt, &
               ie%needSWV, &
