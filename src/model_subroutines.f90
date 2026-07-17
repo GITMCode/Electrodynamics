@@ -175,16 +175,16 @@
 
     integer :: iMLT, iLat
 
-    do iMLT = 1, ie%neednMLTs
-      do iLat = 1, ie%neednLats
+    do iLat = 1, ie%neednLats
+      do iMLT = 1, ie%neednMLTs
         if (abs(ie%needLats(iMlt, iLat)) > 45.0) then
           ! this is to check if we have changed hemispheres:
-          currentTilt = sign(ie%weimerTilt, ie%needLats(iMlt, iLat))
+          currentTilt = ie%weimerTilt*sign(1.0, ie%needLats(iMlt, iLat))
           if (currentTilt .ne. lastTilt) then
             ! Only need to set up the model once, when everything
             ! stays the same (including the hemisphere!):
             call setmodel( &
-              ie%needIMFBy, &
+              ie%needIMFBy*sign(1.0, ie%needLats(iMlt, iLat)), &
               ie%needIMFBz, &
               currentTilt, &
               ie%needSWV, &
@@ -219,8 +219,8 @@
     integer :: iMLT, iLat, iFirst
 
     iFirst = 1
-    do iMLT = 1, ie%neednMLTs
-      do iLat = 1, ie%neednLats
+    do iLat = 1, ie%neednLats
+      do iMLT = 1, ie%neednMLTs
         if (abs(ie%needLats(iMlt, iLat)) > 50.0) then
           call hmrepot( &
             ie%needLats(iMlt, iLat), &
@@ -451,8 +451,8 @@
       return
     endif
 
-    do iMLT = 1, ie%neednMLTs - 1
-      do iLat = 1, ie%neednLats - 1
+    do iLat = 1, ie%neednLats - 1
+      do iMLT = 1, ie%neednMLTs - 1
         call get_fta_model_result( &
           ie%needMlts(iMlt, iLat), &
           ie%needLats(iMlt, iLat), &
@@ -479,8 +479,8 @@
     eFlux = 0.0
     AveE = 2.0
 
-    do iMLT = 1, ie%neednMLTs
-      do iLat = 1, ie%neednLats
+    do iLat = 1, ie%neednLats
+      do iMLT = 1, ie%neednMLTs
         if (ie%needLats(iMlt, iLat) > 0) then
           hp = ie%needHpN
         else
@@ -511,8 +511,8 @@
     real :: eFluxVal, AveEVal, hp
     integer :: iError = 0, iMlt, iLat
 
-    do iMLT = 1, ie%neednMLTs - 1
-      do iLat = 1, ie%neednLats - 1
+    do iLat = 1, ie%neednLats - 1
+      do iMLT = 1, ie%neednMLTs - 1
         call get_newell_electron_diffuse( &
           ie%needMlts(iMlt, iLat), &
           ie%needLats(iMlt, iLat), &
@@ -536,8 +536,8 @@
     real :: eFluxVal, AveEVal, hp
     integer :: iError = 0, iMlt, iLat
 
-    do iMLT = 1, ie%neednMLTs - 1
-      do iLat = 1, ie%neednLats - 1
+    do iLat = 1, ie%neednLats - 1
+      do iMLT = 1, ie%neednMLTs - 1
         call get_newell_electron_mono( &
           ie%needMlts(iMlt, iLat), &
           ie%needLats(iMlt, iLat), &
@@ -561,8 +561,8 @@
     real :: eFluxVal, AveEVal, hp
     integer :: iError = 0, iMlt, iLat
 
-    do iMLT = 1, ie%neednMLTs - 1
-      do iLat = 1, ie%neednLats - 1
+    do iLat = 1, ie%neednLats - 1
+      do iMLT = 1, ie%neednMLTs - 1
         call get_newell_electron_wave( &
           ie%needMlts(iMlt, iLat), &
           ie%needLats(iMlt, iLat), &
@@ -585,8 +585,8 @@
     real :: eFluxVal, AveEVal, hp
     integer :: iError = 0, iMlt, iLat
 
-    do iMLT = 1, ie%neednMLTs - 1
-      do iLat = 1, ie%neednLats - 1
+    do iLat = 1, ie%neednLats - 1
+      do iMLT = 1, ie%neednMLTs - 1
         call get_newell_ion_diffuse( &
           ie%needMlts(iMlt, iLat), &
           ie%needLats(iMlt, iLat), &
