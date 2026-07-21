@@ -302,6 +302,7 @@
     endif
 
     ie%havePolarCap = 0.0
+    ie%isFtaLimit = .false.
     if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE, ie%havePolarCap)
     ! These two models are the same, because they use the same
     if (ie%iAurora_ == iFRE_) call ie%hpi_pem(eFlux, AveE)
@@ -453,6 +454,7 @@
                     ie%neednLats), intent(inout) :: polarCap
     real :: eFluxVal, AveEVal, polarCapVal
     integer :: iError = 0, iMlt, iLat
+    logical :: isFtaLimitVal 
 
     if (iError /= 0) then
       call set_error('FTA Model update has an error!')
@@ -464,10 +466,15 @@
         call get_fta_model_result( &
           ie%needMlts(iMlt, iLat), &
           ie%needLats(iMlt, iLat), &
-          eFluxVal, AveEVal, polarCapVal)
+          eFluxVal, AveEVal, polarCapVal, &
+          isFtaLimitVal,FtaAuVal,FtaAlVal,FtaAeVal)
         eFlux(iMlt, iLat) = eFluxVal
         AveE(iMlt, iLat) = AveEVal
         polarCap(iMlt, iLat) = polarCapVal
+        ie%isFtaLimit = isFtaLimitVal
+        ie%FtaAu = FtaAuVal
+        ie%FtaAl = FtaAlVal
+        ie%FtaAe = FtaAeVal
       enddo
     enddo
     return

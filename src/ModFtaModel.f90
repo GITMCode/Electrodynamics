@@ -37,6 +37,8 @@ module ModFTAModel
   real, dimension(nMltsFta, nLatsFta) :: LBHLResult
   real, dimension(nMltsFta, nLatsFta) :: LBHSResult
   real, dimension(nMltsFta, nLatsFta) :: PolarCapResult
+  logical :: isFtaAualLimit = .false.
+  real :: FtaAuVal, FtaAlVal, FtaAeVal
 
   real, dimension(nMltsFta) :: mlts_fixed_grid
 
@@ -54,12 +56,15 @@ contains
   !
   ! ------------------------------------------------------------------------
 
-  subroutine get_fta_model_result(mlt, lat, eFluxOut, AveEOut, polarCapOut)
+  subroutine get_fta_model_result(mlt, lat, eFluxOut, AveEOut, polarCapOut, &
+                                 isFtaLimit,FAu,FAl,FAe)
     real, intent(in) :: mlt
     real, intent(in) :: lat
     real, intent(out) :: eFluxOut
     real, intent(out) :: AveEOut
     real, intent(out) :: polarCapOut
+    real, intent(out) :: FAu,FAl,FAe
+    logical, intent(out) :: isFtaLimit 
     integer :: iMlt
     integer :: iLat
     if (abs(lat) < minLat) then
@@ -74,17 +79,22 @@ contains
     eFluxOut = eFluxResult(iMlt, iLat)
     AveEOut = AveEResult(iMlt, iLat)
     polarCapOut = polarCapResult(iMlt, iLat)
+    isFtaLimit = isFtaAualLimit
+    FAu = FtaAuVal
+    FAl = FtaAlVal
+    FAe = FtaAeVal
     return
   end subroutine get_fta_model_result
 
   ! ------------------------------------------------------------------------
   ! ------------------------------------------------------------------------
 
-  subroutine update_fta_model(IOr_NeedAU, IOr_NeedAL, iError)
+  subroutine update_fta_model(IOr_NeedAU, IOr_NeedAL,iError)
 
     real, intent(in) :: IOr_NeedAU
     real, intent(in) :: IOr_NeedAL
     integer, intent(out) :: iError
+
 
     real :: au, al, ae
     character(len=10) :: emis_type
@@ -95,6 +105,7 @@ contains
     logical :: any_width, any_offset
     logical, dimension(nMltsFta) :: lp
     real :: startMlt, endMlt
+
     iError = 0
 
     if (.not. isInitialized) then
@@ -121,8 +132,16 @@ contains
       call limiter_al_up(au, al_up)
       if (al > al_up) al = al_up
     endif
+    
+    isFtaAualLimit = .false.
+    if (au /= IOr_NeedAU) isFtaAualLimit = .true.
+    if (al /= IOr_NeedAL) isFtaAualLimit = .true.
 
     ae = au - al
+
+    FtaAuVal = au
+    FtaAlVal = al
+    FtaAeVal = ae
 
     emis_type = 'lbhl'
     call calc_emission_pattern(au, al, emis_type, mlats0_l, efs0_l)
