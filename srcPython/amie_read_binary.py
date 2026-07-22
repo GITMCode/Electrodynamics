@@ -7,6 +7,8 @@ from amie_routines import *
 import sys
 import argparse
 
+from useful_tools import *
+
 # ----------------------------------------------------------------------
 # Function to parse input arguments
 # ----------------------------------------------------------------------
@@ -92,6 +94,19 @@ if (di < 1):
     di = 1
 
 ind = np.arange(start, nTimes, di)
+nTimes = len(ind)
+
+isOnePage = False
+if (nTimes <= 9):
+  isOnePage = True
+  fig = plt.figure(figsize = (10,10))
+  plotax = get_square_plot_locations(fig, nTimes, \
+                                     spaceBetween = 0.05, \
+                                     spaceLeft = 0.01, \
+                                     spaceRight = 0.01, \
+                                     spaceBottom = 0.01, \
+                                     spaceTop = 0.01, \
+                                     isPolar = True)
 
 print("Color : ", vars[iColor])
 print("Line : ", vars[iLine])
@@ -104,6 +119,8 @@ if (vars[iLine].find('Potential') > -1):
 
 maxi = np.max(np.abs(eflux3d[ind]))
 mini = 0.0
+if (np.min(eflux3d[ind]) < 0):
+    mini = -maxi
 
 potmax = np.max(np.abs(potential3d[ind]))
 if (np.min(potential3d[ind]) < 0.0):
@@ -115,6 +132,7 @@ dl = (potmax-potmin)/15.0
 levels = np.arange(potmin, potmax, dl)
 
 iT = 0
+iPlot = 0
 
 for iT in ind:
 
@@ -122,11 +140,16 @@ for iT in ind:
     eflux2d = eflux3d[iT]
 
     time = data["times"][iT]
-    print(time)
     title = time.strftime('%b %d, %Y %H:%M:%S')
+    fileTime = time.strftime('_%d_%H%M')
     
-    fig = plt.figure(figsize = (10,10))
-    ax = fig.add_subplot(projection = 'polar')
+    if (isOnePage):
+        print('Plot : ', iPlot)
+        ax = plotax[iPlot]
+        iPlot += 1
+    else:
+        fig = plt.figure(figsize = (10,10))
+        ax = fig.add_subplot(projection = 'polar')
 
     norm = cm.colors.Normalize(vmax=mini, vmin=maxi)
     if (mini >= 0):
@@ -139,23 +162,20 @@ for iT in ind:
     CS = ax.contour(theta, r, pot2d, levels, colors = 'k')
     smin = "Min : %.2f" % np.min(pot2d)
     smax = "Max : %.2f" % np.max(pot2d)
-    print(smin, smax)
     if (iLabel):
         ax.clabel(CS, CS.levels)    
 
     xlabels = ['', '12', '18', '00']
     ylabels = ['80', '70', '60', '50']
+    ax.set_xticks(np.arange(0,2*np.pi,np.pi/2))
+    ax.set_yticks(np.arange(10,50,10))
     ax.set_xticklabels(xlabels)
     ax.set_yticklabels(ylabels)
     ax.grid(linestyle=':', color='black')
-    ax.set_xticks(np.arange(0,2*np.pi,np.pi/2))
-    ax.set_yticks(np.arange(10,50,10))
     ax.set_title(title)
 
     sMin = 'Min : %.2f' % np.min(pot2d)
     sMax = 'Max : %.2f' % np.max(pot2d)
-
-    print(sMin, sMax)
 
     ax.text(0.0, 0, sMin, transform=ax.transAxes)
     ax.text(1.0, 0, sMax, transform=ax.transAxes, horizontalalignment='right')
@@ -163,9 +183,16 @@ for iT in ind:
     cbar = fig.colorbar(cax, shrink = 0.5, pad=0.01)
     cbar.set_label(vars[iColor], rotation=90)
 
-    i = file.find('.bin')
-    outfile = file[0:i] + "_%4.4d.png" % iT
+    if (not isOnePage):
+        i = file.find('.bin')
+        outfile = file[0:i] + fileTime + ".png"
+        print("Writing file : ", outfile)
+        fig.savefig(outfile)
+        plt.close()
 
+if (isOnePage):
+    i = file.find('.bin')
+    outfile = file[0:i] + "_onepage.png"
     print("Writing file : ", outfile)
     fig.savefig(outfile)
     plt.close()
