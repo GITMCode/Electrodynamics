@@ -40,6 +40,10 @@ MODULE ModIE
   type, public :: ieModel
 
     logical :: isOk = .true.
+    logical :: isFtaLimit = .false.
+    real :: FtaAe = 25
+    real :: FtaAU = 5
+    real :: FtaAL = -20
 
     integer :: iDebugLevel = 0
     integer :: iEfield_ = -1
@@ -112,6 +116,7 @@ MODULE ModIE
     logical :: useAeForHp = .false.
 
     real :: weimerTilt = 0.0
+    real :: LatBoundPotential = 50.0  ! Magnetic latitude boundary (default 45 deg)
 
     ! ----------------------------------------------------------------
     ! To make the indices reading/retrieving a bit more more modular

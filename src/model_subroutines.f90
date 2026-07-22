@@ -154,7 +154,11 @@
       return
     endif
 
-    if (ie%iEfield_ == iWeimer05_) call ie%weimer05(potential)
+    if (ie%iEfield_ == iWeimer05_) then
+      call ie%weimer05(potential)
+    else
+      ie%LatBoundPotential = 45.0
+    endif
     if (ie%iEfield_ == iHepMay_) call ie%hepmay(potential)
 
     if (ie%iEfield_ == iAmiePot_) call get_amie_potential(potential)
@@ -167,6 +171,7 @@
   ! ------------------------------------------------------------
   ! run Weimer05
   subroutine run_weimer05_model(ie, potential)
+    use w05sc, only: get_weimer_boundary
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(inout) :: potential
@@ -189,6 +194,7 @@
               currentTilt, &
               ie%needSWV, &
               ie%needSWN, 'epot')
+            ie%LatBoundPotential = get_weimer_boundary()
             lastTilt = currentTilt
           endif
           ! Run Weimer for specific lat and mlt:
@@ -219,9 +225,9 @@
     integer :: iMLT, iLat, iFirst
 
     iFirst = 1
-    do iLat = 1, ie%neednLats
-      do iMLT = 1, ie%neednMLTs
-        if (abs(ie%needLats(iMlt, iLat)) > 50.0) then
+    do iMLT = 1, ie%neednMLTs
+      do iLat = 1, ie%neednLats
+        if (abs(ie%needLats(iMlt, iLat)) > ie%LatBoundPotential) then
           call hmrepot( &
             ie%needLats(iMlt, iLat), &
             ie%needMlts(iMlt, iLat), &
@@ -294,6 +300,7 @@
     endif
 
     ie%havePolarCap = 0.0
+    ie%isFtaLimit = .false.
     if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE, ie%havePolarCap)
     ! These two models are the same, because they use the same
     if (ie%iAurora_ == iFRE_) call ie%hpi_pem(eFlux, AveE)
@@ -445,6 +452,7 @@
                     ie%neednLats), intent(inout) :: polarCap
     real :: eFluxVal, AveEVal, polarCapVal
     integer :: iError = 0, iMlt, iLat
+    logical :: isFtaLimitVal 
 
     if (iError /= 0) then
       call set_error('FTA Model update has an error!')
@@ -456,10 +464,15 @@
         call get_fta_model_result( &
           ie%needMlts(iMlt, iLat), &
           ie%needLats(iMlt, iLat), &
-          eFluxVal, AveEVal, polarCapVal)
+          eFluxVal, AveEVal, polarCapVal, &
+          isFtaLimitVal,FtaAuVal,FtaAlVal,FtaAeVal)
         eFlux(iMlt, iLat) = eFluxVal
         AveE(iMlt, iLat) = AveEVal
         polarCap(iMlt, iLat) = polarCapVal
+        ie%isFtaLimit = isFtaLimitVal
+        ie%FtaAu = FtaAuVal
+        ie%FtaAl = FtaAlVal
+        ie%FtaAe = FtaAeVal
       enddo
     enddo
     return

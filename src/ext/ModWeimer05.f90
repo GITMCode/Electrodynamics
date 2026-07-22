@@ -199,11 +199,18 @@ module w05sc
   real :: bndyfitr                  ! calculated by setboundary
   real :: esphc(csize), bsphc(csize) ! calculated by setmodel
   real :: tmat(3, 3), ttmat(3, 3)      ! from setboundary
-  integer, parameter :: mxtablesize = 200
+  integer, parameter :: mxtablesize = 300
   real :: plmtable(mxtablesize, csize), &
           colattable(mxtablesize)
   real :: nlms(csize)
 contains
+!-----------------------------------------------------------------------
+  real function get_weimer_boundary()
+! Returns the Weimer model boundary in magnetic latitude (degrees)
+! Converts from colatitude (bndyfitr) to latitude (90-bndyfitr)
+    implicit none
+    get_weimer_boundary = 90.0 - bndyfitr
+  end function get_weimer_boundary
 !-----------------------------------------------------------------------
   subroutine setmodel(by, bz, tilt, swvel, swden, model)
     use ModW05_read_data, only: read_potential, ex_pot, d1_pot, csize, schfits, &
