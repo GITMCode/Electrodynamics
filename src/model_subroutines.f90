@@ -182,30 +182,27 @@
 
     do iLat = 1, ie%neednLats
       do iMLT = 1, ie%neednMLTs
-        if (abs(ie%needLats(iMlt, iLat)) > 45.0) then
-          ! this is to check if we have changed hemispheres:
-          currentTilt = ie%weimerTilt*sign(1.0, ie%needLats(iMlt, iLat))
-          if (currentTilt .ne. lastTilt) then
-            ! Only need to set up the model once, when everything
-            ! stays the same (including the hemisphere!):
-            call setmodel( &
-              ie%needIMFBy*sign(1.0, ie%needLats(iMlt, iLat)), &
-              ie%needIMFBz, &
-              currentTilt, &
-              ie%needSWV, &
-              ie%needSWN, 'epot')
-            ie%LatBoundPotential = get_weimer_boundary()
-            lastTilt = currentTilt
-          endif
-          ! Run Weimer for specific lat and mlt:
-          call epotval( &
-            abs(ie%needLats(iMlt, iLat)), &
-            ie%needMlts(iMlt, iLat), &
-            0.0, &
-            potVal)
-          ! Store potential and convert to V:
-          potential(iMlt, iLat) = potVal*1000.0
+        ! this is to check if we have changed hemispheres:
+        currentTilt = ie%weimerTilt*sign(1.0, ie%needLats(iMlt, iLat))
+        if (currentTilt .ne. lastTilt) then
+          ! Only need to set up the model once, when everything
+          ! stays the same (including the hemisphere!):
+          call setmodel( &
+            ie%needIMFBy*sign(1.0, ie%needLats(iMlt, iLat)), &
+            ie%needIMFBz, &
+            currentTilt, &
+            ie%needSWV, &
+            ie%needSWN, 'epot')
+          lastTilt = currentTilt
         endif
+        ! Run Weimer for specific lat and mlt:
+        call epotval( &
+          abs(ie%needLats(iMlt, iLat)), &
+          ie%needMlts(iMlt, iLat), &
+          0.0, &
+          potVal)
+        ! Store potential and convert to V:
+        potential(iMlt, iLat) = potVal*1000.0
       enddo
     enddo
 
@@ -225,9 +222,8 @@
     integer :: iMLT, iLat, iFirst
 
     iFirst = 1
-    do iMLT = 1, ie%neednMLTs
-      do iLat = 1, ie%neednLats
-        if (abs(ie%needLats(iMlt, iLat)) > ie%LatBoundPotential) then
+    do iLat = 1, ie%neednLats
+      do iMLT = 1, ie%neednMLTs
           call hmrepot( &
             ie%needLats(iMlt, iLat), &
             ie%needMlts(iMlt, iLat), &
@@ -240,7 +236,6 @@
             potVal)
           potential(iMlt, iLat) = potVal*1000.0
           iFirst = iFirst + 1
-        endif
       enddo
     enddo
 
