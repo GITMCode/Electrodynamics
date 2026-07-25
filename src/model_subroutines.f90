@@ -154,11 +154,8 @@
       return
     endif
 
-    if (ie%iEfield_ == iWeimer05_) then
-      call ie%weimer05(potential)
-    else
-      ie%LatBoundPotential = 45.0
-    endif
+    if (ie%iEfield_ == iWeimer05_) call ie%weimer05(potential)
+
     if (ie%iEfield_ == iHepMay_) call ie%hepmay(potential)
 
     if (ie%iEfield_ == iAmiePot_) call get_amie_potential(potential)
