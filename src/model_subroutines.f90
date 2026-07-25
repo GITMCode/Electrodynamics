@@ -168,7 +168,6 @@
   ! ------------------------------------------------------------
   ! run Weimer05
   subroutine run_weimer05_model(ie, potential)
-    use w05sc, only: get_weimer_boundary
     class(ieModel) :: ie
     real, dimension(ie%neednMlts, &
                     ie%neednLats), intent(inout) :: potential
