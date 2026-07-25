@@ -199,7 +199,7 @@ module w05sc
   real :: bndyfitr                  ! calculated by setboundary
   real :: esphc(csize), bsphc(csize) ! calculated by setmodel
   real :: tmat(3, 3), ttmat(3, 3)      ! from setboundary
-  integer, parameter :: mxtablesize = 200
+  integer, parameter :: mxtablesize = 300
   real :: plmtable(mxtablesize, csize), &
           colattable(mxtablesize)
   real :: nlms(csize)

@@ -155,6 +155,7 @@
     endif
 
     if (ie%iEfield_ == iWeimer05_) call ie%weimer05(potential)
+
     if (ie%iEfield_ == iHepMay_) call ie%hepmay(potential)
 
     if (ie%iEfield_ == iAmiePot_) call get_amie_potential(potential)
@@ -177,29 +178,27 @@
 
     do iLat = 1, ie%neednLats
       do iMLT = 1, ie%neednMLTs
-        if (abs(ie%needLats(iMlt, iLat)) > 45.0) then
-          ! this is to check if we have changed hemispheres:
-          currentTilt = ie%weimerTilt*sign(1.0, ie%needLats(iMlt, iLat))
-          if (currentTilt .ne. lastTilt) then
-            ! Only need to set up the model once, when everything
-            ! stays the same (including the hemisphere!):
-            call setmodel( &
-              ie%needIMFBy*sign(1.0, ie%needLats(iMlt, iLat)), &
-              ie%needIMFBz, &
-              currentTilt, &
-              ie%needSWV, &
-              ie%needSWN, 'epot')
-            lastTilt = currentTilt
-          endif
-          ! Run Weimer for specific lat and mlt:
-          call epotval( &
-            abs(ie%needLats(iMlt, iLat)), &
-            ie%needMlts(iMlt, iLat), &
-            0.0, &
-            potVal)
-          ! Store potential and convert to V:
-          potential(iMlt, iLat) = potVal*1000.0
+        ! this is to check if we have changed hemispheres:
+        currentTilt = ie%weimerTilt*sign(1.0, ie%needLats(iMlt, iLat))
+        if (currentTilt .ne. lastTilt) then
+          ! Only need to set up the model once, when everything
+          ! stays the same (including the hemisphere!):
+          call setmodel( &
+            ie%needIMFBy*sign(1.0, ie%needLats(iMlt, iLat)), &
+            ie%needIMFBz, &
+            currentTilt, &
+            ie%needSWV, &
+            ie%needSWN, 'epot')
+          lastTilt = currentTilt
         endif
+        ! Run Weimer for specific lat and mlt:
+        call epotval( &
+          abs(ie%needLats(iMlt, iLat)), &
+          ie%needMlts(iMlt, iLat), &
+          0.0, &
+          potVal)
+        ! Store potential and convert to V:
+        potential(iMlt, iLat) = potVal*1000.0
       enddo
     enddo
 
@@ -221,7 +220,6 @@
     iFirst = 1
     do iLat = 1, ie%neednLats
       do iMLT = 1, ie%neednMLTs
-        if (abs(ie%needLats(iMlt, iLat)) > 50.0) then
           call hmrepot( &
             ie%needLats(iMlt, iLat), &
             ie%needMlts(iMlt, iLat), &
@@ -234,7 +232,6 @@
             potVal)
           potential(iMlt, iLat) = potVal*1000.0
           iFirst = iFirst + 1
-        endif
       enddo
     enddo
 
@@ -294,6 +291,7 @@
     endif
 
     ie%havePolarCap = 0.0
+    ie%isFtaLimit = .false.
     if (ie%iAurora_ == iFTA_) call ie%fta(eFlux, AveE, ie%havePolarCap)
     ! These two models are the same, because they use the same
     if (ie%iAurora_ == iFRE_) call ie%hpi_pem(eFlux, AveE)
@@ -445,6 +443,7 @@
                     ie%neednLats), intent(inout) :: polarCap
     real :: eFluxVal, AveEVal, polarCapVal
     integer :: iError = 0, iMlt, iLat
+    logical :: isFtaLimitVal 
 
     if (iError /= 0) then
       call set_error('FTA Model update has an error!')
@@ -456,10 +455,15 @@
         call get_fta_model_result( &
           ie%needMlts(iMlt, iLat), &
           ie%needLats(iMlt, iLat), &
-          eFluxVal, AveEVal, polarCapVal)
+          eFluxVal, AveEVal, polarCapVal, &
+          isFtaLimitVal,FtaAuVal,FtaAlVal,FtaAeVal)
         eFlux(iMlt, iLat) = eFluxVal
         AveE(iMlt, iLat) = AveEVal
         polarCap(iMlt, iLat) = polarCapVal
+        ie%isFtaLimit = isFtaLimitVal
+        ie%FtaAu = FtaAuVal
+        ie%FtaAl = FtaAlVal
+        ie%FtaAe = FtaAeVal
       enddo
     enddo
     return
