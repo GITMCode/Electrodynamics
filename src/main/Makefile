@@ -1,7 +1,10 @@
 
 default : TEST
 
-include ../../build/Makefile.def
+include $(DIRSFILE)
+ifneq ($(wildcard $(BUILDDIR)/Makefile.conf),)
+  include $(BUILDDIR)/Makefile.conf
+endif
 
 SEARCH = -I..
 

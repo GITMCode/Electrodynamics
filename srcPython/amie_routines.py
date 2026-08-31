@@ -110,7 +110,14 @@ def amie_write_binary(file, data):
     fp.write_record(val)
     
     for var in data["Vars"]:
-        varpad = var.ljust(30).encode('utf-8')
+        # The Fortran reader (ModAMIE_Interface.f90) stores variable names
+        # in a character(len=30) buffer and its headerLength formula assumes
+        # every varname record is exactly 30 bytes on disk. ljust(30) pads
+        # short names but does NOT truncate long ones, so we slice to 30
+        # explicitly. Names like "Electron Energy Flux (ergs/cm2/s)" would
+        # otherwise produce a 33-byte record and throw off the offsets used
+        # to seek between time blocks.
+        varpad = var.ljust(30)[:30].encode('utf-8')
         fp.write_record(varpad)
 
     for iT in np.arange(data["nTimes"]):

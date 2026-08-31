@@ -40,6 +40,10 @@ MODULE ModIE
   type, public :: ieModel
 
     logical :: isOk = .true.
+    logical :: isFtaLimit = .false.
+    real :: FtaAe = 25
+    real :: FtaAU = 5
+    real :: FtaAL = -20
 
     integer :: iDebugLevel = 0
     integer :: iEfield_ = -1
