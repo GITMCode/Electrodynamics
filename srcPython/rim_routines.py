@@ -202,7 +202,7 @@ def read_all_rim_files(filelist, doFACs=False):
 
     if doFACs:
         rimVars.append('jr')
-        outVars.append('Field Aligned Current (mW/m2)')
+        outVars.append('Field Aligned Current (uA/m2)')
         unitFactors.append(1.0)
 
     # New files redeine things:

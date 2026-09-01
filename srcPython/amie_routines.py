@@ -164,6 +164,10 @@ def amie_write_netcdf(file, data):
     cFloat4 = 'f4'
     cInt2 = 'i2'
 
+    cFACname = 'Field Aligned Current (uA/m2)'
+    hasFac = cFACname in data["Vars"]
+    cFAC = 'FAC'
+
     time = ds.createDimension(cTime, None)
     lat = ds.createDimension(cLat, data["nLats"])
     mlt = ds.createDimension(cMlt, data["nMlts"])
@@ -184,10 +188,14 @@ def amie_write_netcdf(file, data):
     aveeNC = ds.createVariable(cAveE, cFloat4, (cTime, cLat, cMlt, ))
     aveeNC.units = 'keV'
 
+    if hasFac:
+        facNC = ds.createVariable(cFAC, cFloat4, (cTime, cLat, cMlt, ))
+        facNC.units = 'uA/m2'
+
     latsNC[:] = data["lats"]
     mltsNC[:] = data["mlts"]
 
-    timearray = [] 
+    timearray = []
     time_1965 = datetime(1965, 1, 1, 0, 0, 0)
     for i in np.arange(0,data["nTimes"]):
         time_delta = data["times"][i] - time_1965
@@ -201,7 +209,10 @@ def amie_write_netcdf(file, data):
 
         cPot = data["Vars"][2]
         aveeNC[i,:,:] = data[cPot][i]
-        
+
+        if hasFac:
+            facNC[i,:,:] = data[cFACname][i]
+
     timesNC[:] = timearray
 
     ds.close()
