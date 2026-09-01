@@ -188,8 +188,8 @@ contains
 
 
     ! Names for mono, waves, and polar cap:
-    call add_to_list_and_mapper(iFieldAlignedCurrent_, "Field Aligned Current (mW/m2)")
-    ! call add_to_list_and_mapper(iFieldAlignedCurrent_, "Field Aligned Current (mW/m2)")
+    call add_to_list_and_mapper(iFieldAlignedCurrent_, "Field Aligned Current (uA/m2)")
+    ! call add_to_list_and_mapper(iFieldAlignedCurrent_, "Field Aligned Current (uA/m2)")
 
     ! These are the "official" names for each data type (not searched for...)
     AMIE_Names(iPotential_) = "Potential"
