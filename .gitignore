@@ -59,3 +59,4 @@ util/NOMPI/src/Makefile.RULES
 
 # Necessary for TIEGCM mkdepends
 Srcfiles
+.DS_Store
