@@ -6,6 +6,8 @@
     if (this%iDebugLevel > 3) &
       write(*, *) "=> Setting neednMlts to : ", iValue
     this%neednMlts = iValue
+    this%isPotentialUpdated = .false.
+    this%isAuroraUpdated = .false.
   end subroutine set_nMlts
 
   ! ------------------------------------------------------------
@@ -16,6 +18,8 @@
     if (this%iDebugLevel > 3) &
       write(*, *) "=> Setting neednMlats to : ", iValue
     this%neednLats = iValue
+    this%isPotentialUpdated = .false.
+    this%isAuroraUpdated = .false.
   end subroutine set_nLats
 
   ! ------------------------------------------------------------

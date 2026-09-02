@@ -4,7 +4,7 @@ MODULE ModIE
   use ModCharSize
   use ModTimeAmie
   use ModW05_read_data
-  use w05sc, only: setmodel, epotval
+  use w05sc, only: setmodel, epotval, mpfac
   use EIE_ModWeimer, only: get_tilt
   use ModFtaModel
   use ModIHP
@@ -70,7 +70,7 @@ MODULE ModIE
     real, allocatable, dimension(:, :, :) :: haveLats
     real, allocatable, dimension(:, :, :) :: haveMLTs
     ! Field-aligned Currents:
-    real, allocatable, dimension(:, :, :) :: haveFac
+    real, allocatable, dimension(:, :) :: haveFac
     ! Potentials:
     real, allocatable, dimension(:, :, :) :: havePotential
     ! Electron diffuse:
