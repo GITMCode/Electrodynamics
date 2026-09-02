@@ -137,12 +137,11 @@
 
     use ModAMIE_Interface, only: get_amie_potential
     class(ieModel) :: ie
-    real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: potential
+    real, dimension(ie%neednMlts, ie%neednLats), intent(out) :: potential
     real :: currentTilt = rBadValue, lastTilt = rBadValue
     real :: potVal
 
-    integer :: iMLT, iLat
+    integer :: iMLT, iLat, ierror
     potential = 0.0
 
     call ie%check_time()
@@ -169,12 +168,11 @@
   ! run Weimer05
   subroutine run_weimer05_model(ie, potential)
     class(ieModel) :: ie
-    real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(inout) :: potential
+    real, dimension(ie%neednMlts, ie%neednLats), intent(inout) :: potential
     real :: currentTilt = rBadValue, lastTilt = rBadValue
-    real :: potVal
+    real :: potVal, facVal
 
-    integer :: iMLT, iLat
+    integer :: iMLT, iLat, iError
 
     do iLat = 1, ie%neednLats
       do iMLT = 1, ie%neednMLTs
@@ -199,6 +197,41 @@
           potVal)
         ! Store potential and convert to V:
         potential(iMlt, iLat) = potVal*1000.0
+      enddo
+    enddo
+
+    if (allocated(ie%haveFAC)) deallocate(ie%haveFAC)
+    allocate(ie%haveFAC(ie%neednMlts, ie%neednLats), stat=iError)
+    if (iError /= 0) then
+      isOk = .false.
+      call set_error("run_weimer05_model - failed to allocate havefac.")
+      return
+    endif
+
+    ie%haveFAC = 0.0
+    ! Same loop again for the field aligned currents
+    ! Needed because Weimer must be initialized differently
+    do iLat = 1, ie%neednLats
+      do iMLT = 1, ie%neednMLTs
+        ! this is to check if we have changed hemispheres:
+        currentTilt = sign(ie%weimerTilt, ie%needLats(iMlt, iLat))
+        if (currentTilt .ne. lastTilt) then
+          ! Call with 'bpot' mode instead of 'epot'
+          ! Tells Weimer05 to use the Birkeland-derived coeffs
+          call setmodel( &
+            ie%needIMFBy, &
+            ie%needIMFBz, &
+            currentTilt, &
+            ie%needSWV, &
+            ie%needSWN, 'bpot')
+        endif
+        call mpfac( &
+          abs(ie%needLats(iMlt, iLat)), &
+          ie%needMlts(iMlt, iLat), &
+          0.0, &
+          facVal)
+
+        ie%haveFAC(iMlt, iLat) = facVal
       enddo
     enddo
 
@@ -436,18 +469,21 @@
     use ModAMIE_Interface, only: get_amie_fac
 
     class(ieModel) :: ie
-    real, dimension(ie%neednMlts, &
-                    ie%neednLats), intent(out) :: facs
+    real, dimension(ie%neednMlts, ie%neednLats), intent(inout) :: facs
+    real, dimension(ie%neednMlts, ie%neednLats) :: pots
 
+    facs = 0.
+    if (.not. ie%isPotentialUpdated) then
+      call run_potential_model(ie, pots)
+    endif
     facs = 0.0
 
     if (ie%iAurora_ == iAmieAur_) then
       call get_amie_fac(facs)
     else
-      ! this should be set in FTA model, then
-       call set_error("FACs are experimental & only supported with AMIE aurora currently")
+      ! Should only be available to Weimer...
+      facs = ie%haveFAC
     endif
-
     return
   end subroutine get_fac_results
 
