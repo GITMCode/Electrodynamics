@@ -12,6 +12,12 @@ module ModW05_read_data
   real :: alschfits(d2_pot, csize), schfits(d1_pot, csize), ex_pot(2)
   integer :: maxl_pot, maxm_pot
 !
+! schfits and ex_pot above are only a read buffe so the electric and
+! magnetic potential coefficients stay live at the same time
+!
+  real :: schfits_epot(d1_pot, csize), ex_pot_epot(2)
+  real :: schfits_bpot(d1_pot, csize), ex_pot_bpot(2)
+!
 ! Data read from SCHAtable.dat:
 !
   integer, parameter :: d1_scha = 19, d2_scha = 7, d3_scha = 68
@@ -32,9 +38,21 @@ contains
     implicit none
     character(len=iCharLenIE_), intent(in) :: inDir
     character(len=iCharLenIE_) :: inFileName
+    integer :: ab_epot(csize), ls_epot(csize), ms_epot(csize)
     inFileName = 'W05scEpot.dat'
     call merge_str(inDir, inFileName)
-    call read_potential(inFileName)
+    call read_potential(inFileName, 'epot')
+    ab_epot = ab; ls_epot = ls; ms_epot = ms
+    ! Birkeland current coefficients, used by mpfac:
+    inFileName = 'W05scBpot.dat'
+    call merge_str(inDir, inFileName)
+    call read_potential(inFileName, 'bpot')
+    ! mpfac and epotval share ab/ls/ms, so the two files must agree on them:
+    if (any(ab /= ab_epot) .or. any(ls /= ls_epot) .or. any(ms /= ms_epot)) then
+      write(6, "('>>> read_all_files: W05scEpot.dat and W05scBpot.dat ',&
+        &'disagree on ab/ls/ms - they cannot share these arrays')")
+      stop 'read_all_files'
+    endif
     inFileName = 'SCHAtable.dat'
     call merge_str(inDir, inFileName)
     call read_schatable(inFileName)
@@ -43,7 +61,7 @@ contains
     call read_bndy(inFileName)
   end subroutine read_all_files
 
-  subroutine read_potential(infile)
+  subroutine read_potential(infile, model)
 !
 ! Read ascii data file W05scEpot.dat or W05scBpot.dat, written by
 !   pro write_potential (write_data.pro)
@@ -52,6 +70,8 @@ contains
 !
 ! Args:
     character(len=*), intent(in) :: infile
+! model: 'epot' or 'bpot' - which set of coefficients this file fills
+    character(len=*), intent(in) :: model
 !
 ! Local:
 !
@@ -89,6 +109,16 @@ contains
     do i = 1, csize
       read(lu, "(6e20.9)") schfits(:, i)
     enddo
+!
+! Stash into the per-model arrays so both models can be live at once:
+!
+    if (trim(model) == 'bpot') then
+      schfits_bpot = schfits
+      ex_pot_bpot = ex_pot
+    else
+      schfits_epot = schfits
+      ex_pot_epot = ex_pot
+    endif
 
 !  write(6,"(/,'read_potential: Opened file ',a)") infile
 !  write(6,"('ab=',28i3)") ab
@@ -206,8 +236,9 @@ module w05sc
 contains
 !-----------------------------------------------------------------------
   subroutine setmodel(by, bz, tilt, swvel, swden, model)
-    use ModW05_read_data, only: read_potential, ex_pot, d1_pot, csize, schfits, &
-                                read_schatable
+    use ModW05_read_data, only: read_potential, d1_pot, csize, read_schatable, &
+                                schfits_epot, ex_pot_epot, &
+                                schfits_bpot, ex_pot_bpot
     implicit none
 !
 ! Args:
@@ -222,7 +253,7 @@ contains
     integer :: i, j
     real :: bt, angle, pi, stilt, stilt2, sw, swp, swe, c0, &
             rang, cosa, sina, cos2a, sin2a
-    real :: cfits(d1_pot, csize), a(d1_pot)
+    real :: cfits(d1_pot, csize), a(d1_pot), expot(2)
 !
     if (trim(model) /= 'epot' .and. trim(model) /= 'bpot') then
       write(6, "('>>> model=',a)") trim(model)
@@ -238,6 +269,16 @@ contains
     rad2deg = 180./pi
     deg2rad = pi/180.
 !
+! Pick the coefficient set for this model
+!
+    if (trim(model) == 'epot') then
+      cfits = schfits_epot
+      expot = ex_pot_epot
+    else
+      cfits = schfits_bpot
+      expot = ex_pot_bpot
+    endif
+!
     bt = sqrt(by**2 + bz**2)
     angle = atan2(by, bz)*rad2deg
     call setboundary(angle, bt, tilt, swvel, swden)
@@ -245,7 +286,7 @@ contains
     stilt = sin(tilt*deg2rad)
     stilt2 = stilt**2
     sw = bt*swvel/1000.
-    swe = (1.-exp(-sw*ex_pot(2)))*sw**ex_pot(1)
+    swe = (1.-exp(-sw*expot(2)))*sw**expot(1)
     c0 = 1.
     swp = swvel**2*swden*1.6726e-6
     rang = angle*deg2rad
@@ -259,7 +300,6 @@ contains
       sina = bt*sina
       sin2a = bt*sin2a
     endif
-    cfits = schfits ! schfits(d1_pot,csize) is in module read_data
     a = (/c0, swe, stilt, stilt2, swp, &
           swe*cosa, stilt*cosa, stilt2*cosa, swp*cosa, &
           swe*sina, stilt*sina, stilt2*sina, swp*sina, &
