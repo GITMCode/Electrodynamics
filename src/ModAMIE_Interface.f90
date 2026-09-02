@@ -186,7 +186,6 @@ contains
     call add_to_list_and_mapper(iEle_wave_avee_, "BB Mean Energy (keV)")
     call add_to_list_and_mapper(iPolarCap_, "Polar Cap Indicator")
 
-
     ! Names for mono, waves, and polar cap:
     call add_to_list_and_mapper(iFieldAlignedCurrent_, "Field Aligned Current (uA/m2)")
     ! call add_to_list_and_mapper(iFieldAlignedCurrent_, "Field Aligned Current (uA/m2)")

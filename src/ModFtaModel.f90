@@ -57,14 +57,14 @@ contains
   ! ------------------------------------------------------------------------
 
   subroutine get_fta_model_result(mlt, lat, eFluxOut, AveEOut, polarCapOut, &
-                                 isFtaLimit,FAu,FAl,FAe)
+                                  isFtaLimit, FAu, FAl, FAe)
     real, intent(in) :: mlt
     real, intent(in) :: lat
     real, intent(out) :: eFluxOut
     real, intent(out) :: AveEOut
     real, intent(out) :: polarCapOut
-    real, intent(out) :: FAu,FAl,FAe
-    logical, intent(out) :: isFtaLimit 
+    real, intent(out) :: FAu, FAl, FAe
+    logical, intent(out) :: isFtaLimit
     integer :: iMlt
     integer :: iLat
     if (abs(lat) < minLat) then
@@ -89,12 +89,11 @@ contains
   ! ------------------------------------------------------------------------
   ! ------------------------------------------------------------------------
 
-  subroutine update_fta_model(IOr_NeedAU, IOr_NeedAL,iError)
+  subroutine update_fta_model(IOr_NeedAU, IOr_NeedAL, iError)
 
     real, intent(in) :: IOr_NeedAU
     real, intent(in) :: IOr_NeedAL
     integer, intent(out) :: iError
-
 
     real :: au, al, ae
     character(len=10) :: emis_type
@@ -132,7 +131,7 @@ contains
       call limiter_al_up(au, al_up)
       if (al > al_up) al = al_up
     endif
-    
+
     isFtaAualLimit = .false.
     if (au /= IOr_NeedAU) isFtaAualLimit = .true.
     if (al /= IOr_NeedAL) isFtaAualLimit = .true.
