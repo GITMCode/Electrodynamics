@@ -372,11 +372,6 @@ contains
       bndyfitr = bndyfitr + x(i)*c(i)
     enddo
 
-!   write(6,"('setboundary: cosa=',f8.3,' btx=',f8.3)") cosa,btx
-!   write(6,"('setboundary: x=',/,(6e12.4))") x
-!   write(6,"('setboundary: c=',/,(6e12.4))") c
-!   write(6,"('setboundary: bndyfitr=',e12.4)") bndyfitr
-
   end subroutine setboundary
 !-----------------------------------------------------------------------
   subroutine epotval(lat, mlt, fill, epot)
