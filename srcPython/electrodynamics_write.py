@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import datetime as dt
+import os
+from os import write
 import numpy as np
 from datetime import datetime
 from datetime import timedelta
@@ -109,7 +111,12 @@ def get_command_line_args(argv):
             'substorm': False,
             'ions': False,
             'move': False,
-            'cusp': False}
+            'cusp': False,
+            'facs': False,
+            'by': 0.0,
+            'bz': -5.0,
+            'au': 25.0,
+            'al': -25.0}
 
     arg_type = {'startdate': str,
                 'enddate': str,
@@ -121,7 +128,12 @@ def get_command_line_args(argv):
                 'substorm': bool,
                 'ions': bool,
                 'move': bool,
-                'cusp': bool}
+                'cusp': bool,
+                'facs': bool,
+                'by': float,
+                'bz': float,
+                'au': float,
+                'al': float}
     
     # If there is input, set default help to False
     args['help'] = False if len(argv) > 0 else True
@@ -477,6 +489,18 @@ def calc_tcvs(mlts, lats, ocflb, centerAtTime, ampAtTime):
     return potential
 
 # ------------------------------------------------------------------------
+# latitudinal e-folding width shared by make_potential and make_fac so that the two 
+# patterns start and end at the same latitudes.
+# ------------------------------------------------------------------------
+
+def potential_tau(by):
+
+    by_sharpen = (25.0 - np.abs(by)) / 25.0
+    tau_potential_base = 7.0 * np.sqrt(by_sharpen)
+
+    return tau_potential_base, by_sharpen
+
+# ------------------------------------------------------------------------
 # make potential
 # ------------------------------------------------------------------------
 
@@ -485,13 +509,12 @@ def make_potential(mlts, lats, by, bz, ae, ocflbBase, substorm, move):
     ssvalue = define_substorm_characteristics(mlts, lats, ae, ocflbBase, substorm, 1, move)
 
     ocflb0 = np.mean(ocflbBase)
-    
+
     # Do everything is kV, then transform to V at end
     amp_bz = -7.5
     amp_by = -5.0
-    amp_ae = -30.0 * ae / 500.0 
-    by_sharpen = (25.0 - np.abs(by)) / 25.0
-    tau_potential_base = 7.0 * np.sqrt(by_sharpen)
+    amp_ae = -30.0 * ae / 500.0
+    tau_potential_base, by_sharpen = potential_tau(by)
 
     mltsR = mlts * np.pi / 12.0
 
@@ -558,6 +581,153 @@ def make_potential(mlts, lats, by, bz, ae, ocflbBase, substorm, move):
     return potential
 
 
+# ------------------------------------------------------------------------
+# make the field-aligned currents (Region 1 / Region 2 two-cell pattern)
+# ------------------------------------------------------------------------
+def auroral_r2_geometry(mlts, ae, ocflbBase, edgeFactor=1.5):
+
+    tau_eflux = 2.0 + ae/200.0 * 0.25
+
+    dawn_mlt_rad = 6.0 * np.pi / 12.0
+    tau_dawn = tau_eflux * (0.5 + 1.5 * (np.cos(dawn_mlt_rad) + 1.0)) / 3.5
+
+    tau_eq_fixed = 0.75 * tau_dawn
+    tau_pole_fixed = 1.50 * tau_dawn
+
+    aurora_shift = -tau_eflux * 0.75
+    aurora_center = np.asarray(ocflbBase) + aurora_shift
+
+    r2_equator = aurora_center - edgeFactor * tau_eq_fixed
+    r2_pole = aurora_center + edgeFactor * tau_pole_fixed
+
+    return aurora_center, r2_equator, r2_pole, tau_eq_fixed, tau_pole_fixed
+
+def make_fac(mlts, lats, by, bz, ae, ocflbBase):
+
+    ampFac = -bz * 1.0e-7
+    if ampFac < 1.0e-7:
+        ampFac = 1.0e-7
+
+    mltsR = mlts * np.pi / 12.0
+    sinMlt = np.sin(mltsR)
+
+    nMlts = len(mlts)
+    nLats = len(lats)
+
+    fac = np.zeros((nLats, nMlts))
+
+    tau_eflux = 2.0 + ae/200.0 * 0.25
+    dawn_mlt_rad = 6.0 * np.pi / 12.0
+    tau_dawn = tau_eflux * (0.5 + 1.5 * (np.cos(dawn_mlt_rad) + 1.0)) / 3.5
+    tau_eq_fixed   = 0.75 * tau_dawn
+    tau_pole_fixed = 1.50 * tau_dawn
+
+    edgeFactor = 1.5
+
+    aurora_shift = -tau_eflux * 0.75
+    fixed_r2_width = edgeFactor * (tau_eq_fixed + tau_pole_fixed)
+    fixed_r1_width = fixed_r2_width
+
+    for i, ocflb in enumerate(ocflbBase):
+
+        aurora_center = ocflb + aurora_shift
+        r2_equator = aurora_center - edgeFactor * tau_eq_fixed
+        join = aurora_center + edgeFactor * tau_pole_fixed
+        r2 = np.zeros(nLats)
+        dist = lats - aurora_center
+        tau_side = np.zeros(nLats)
+        tau_side[dist < 0.0]  = tau_eq_fixed
+        tau_side[dist >= 0.0] = tau_pole_fixed
+        inside_r2 = ((lats >= r2_equator) & (lats <= join))
+        raw_r2 = np.exp(-(np.abs(dist[inside_r2]/tau_side[inside_r2])**4))
+        edgeValue = np.exp(-(edgeFactor**4))
+        r2[inside_r2] = (raw_r2 - edgeValue) / (1.0 - edgeValue)
+
+        r1_equator = join
+        r1_pole = join + fixed_r1_width
+        r1 = np.zeros(nLats)
+        inside_r1 = ((lats >= r1_equator) & (lats <= r1_pole))
+        r1_center = 0.5 * (r1_equator + r1_pole)
+        r1_halfwidth = fixed_r1_width / 2.0
+        dist1 = lats[inside_r1] - r1_center
+        raw_r1 = np.exp(-(np.abs(dist1 / r1_halfwidth)**4))
+        edge_r1 = np.exp(-1.0)
+        r1[inside_r1] = (raw_r1 - edge_r1)/(1.0 - edge_r1)
+        fac[:, i] = sinMlt[i] * ampFac *(+r2 - r1) * 1.0e6
+        # fac[:, i] = sinMlt[i] * (-(ampFac * r2 *1/2) + (ampFac * r1)) * 1.0e6
+
+    return fac
+
+def plot_polar_diagnostics(mlts, lats, pot2d, eflux2d, fac2d,
+                           ocflb, ae, time_current,
+                           outfile='electrodynamics_polar.png'):
+
+    theta = mlts * np.pi / 12.0
+    radius = 90.0 - lats
+    theta2d, radius2d = np.meshgrid(theta, radius)
+
+    aurora_center, r2_equator, r2_pole, tau_eq_fixed, tau_pole_fixed = auroral_r2_geometry(mlts, ae, ocflb)
+
+    fields = [
+        (pot2d / 1000.0, 'Potential (kV)', 'RdBu_r', True),
+        (eflux2d, 'Electron Energy Flux', 'viridis', False),
+        (fac2d, 'FAC (uA/m2)', 'RdBu_r', True),
+    ]
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6),
+                             subplot_kw={'projection': 'polar'},
+                             constrained_layout=True)
+
+    for ax, (field, title, cmap, symmetric) in zip(axes, fields):
+
+        field = np.asarray(field)
+
+        if symmetric:
+            vmax = np.nanmax(np.abs(field))
+            if (not np.isfinite(vmax)) or vmax == 0.0:
+                vmax = 1.0
+            levels = np.linspace(-vmax, vmax, 31)
+        else:
+            vmin = np.nanmin(field)
+            vmax = np.nanmax(field)
+            if (not np.isfinite(vmin)) or (not np.isfinite(vmax)):
+                vmin, vmax = 0.0, 1.0
+            if vmax <= vmin:
+                vmax = vmin + 1.0
+            levels = np.linspace(vmin, vmax, 31)
+
+        cf = ax.contourf(theta2d, radius2d, field,
+                         levels=levels, cmap=cmap, extend='both')
+
+
+        ax.set_theta_zero_location('S')
+        ax.set_theta_direction(1)
+        ax.set_thetagrids([0, 90, 180, 270],
+                          labels=['0 MLT', '6 MLT', '12 MLT', '18 MLT'])
+
+        rmax = 90.0 - np.min(lats)
+        ax.set_rlim(0.0, rmax)
+
+        rticks = np.arange(10.0, rmax + 0.1, 10.0)  # latitude
+        ax.set_yticks(rticks)
+        ax.set_yticklabels([f'{90.0-r:.0f} deg' for r in rticks])
+
+        ax.plot(theta, 90.0 - np.asarray(ocflb),
+                'k--', linewidth=1.2, label='OCFLB')
+        # ax.plot(theta, 90.0 - r2_equator,
+        #         'k:', linewidth=1.0, label='R2 equator edge')
+        # ax.plot(theta, 90.0 - r2_pole,
+        #         'k:', linewidth=1.0, label='R2 pole edge')
+
+        ax.set_title(title, pad=20)
+        fig.colorbar(cf, ax=ax, pad=0.10, shrink=0.8)
+
+    axes[0].legend(loc='upper left', bbox_to_anchor=(-0.15, 1.15),
+                   fontsize=8)
+
+    fig.suptitle(str(time_current), fontsize=14)
+    fig.savefig(outfile, dpi=180, bbox_inches='tight')
+    plt.close(fig)
 # ------------------------------------------------------------------------
 # This detects substorms based on the Newell and Gjerloev [2011] criteria
 # A substorm onset occurs at T0, when:
@@ -730,26 +900,29 @@ if (args["real"]):
 else:
 
     # Values every minute:
-    dt = 1.0/60.0
-    subtimes = np.arange(12,13+dt,dt)
-    alltimes = np.concatenate([[-24.0], subtimes, [24.0]])
+    # dt = 1.0/60.0
+    # subtimes = np.arange(12,13+dt,dt)
+    # alltimes = np.concatenate([[-24.0], subtimes, [24.0]])
 
-    basetime = datetime(2020, 3, 21, 0, 0, 0)
+    # One full day, hourly:
+    alltimes = np.arange(0.0, 24.0+1.0, 1.0)
+
+    year = int(args["startdate"][0:4])
+    month = int(args["startdate"][4:6])
+    day = int(args["startdate"][6:8])
+    basetime = datetime(year, month, day, 0, 0, 0)
     alltimes = np.array(alltimes) * 3600.0
     nTimes = len(alltimes)
     print('Number of times : ', nTimes)
     
-    bysub = np.random.normal(15.0, 0.0001, nTimes)
-    bzsub = np.random.normal(-5.0, 0.0001, nTimes)
-
     bx = np.zeros(nTimes)
-    by = bysub
-    bz = bzsub
+    by = np.zeros(nTimes) + args['by']
+    bz = np.zeros(nTimes) + args['bz']
     vx = np.zeros(nTimes) - 400.0
     # set the smoothed bz to the fake bz:
     bzs = bz
-    au = np.zeros(nTimes) + 30.0
-    al = np.zeros(nTimes) - 70.0
+    au = np.zeros(nTimes) + args['au']
+    al = np.zeros(nTimes) + args['al']
     ae = au - al
     substorm = np.zeros(nTimes) - 1000.0
 
@@ -808,6 +981,10 @@ if (ions):
     data["Vars"].append('Ion Energy Flux (ergs/cm2/s)')
     data["Vars"].append('Ion Mean Energy (keV)')
 
+facs = args["facs"]
+if (facs):
+    data["Vars"].append('Field Aligned Current (uA/m2)')
+
 data["nVars"] = len(data["Vars"])
 
 data["version"] = 1.3
@@ -855,6 +1032,9 @@ for i in np.arange(0,nTimes):
     else:
         ionHp = hp * 0.0
 
+    if (facs):
+        fac2d = make_fac(mlts, lats, byNow, bzs[i], aeCurrent, ocflb)
+
     # print(ut, int(by[i]), int(bz[i]), int(ae[i]), int(hp))
         
     #  ; IMF should be (nTimes,4) - V, Bx, By, Bz
@@ -889,6 +1069,23 @@ for i in np.arange(0,nTimes):
         data[cIonEFlux].append(ionEflux2d)
         cIonAveE = data["Vars"][4]
         data[cIonAveE].append(ionAvee2d)
+
+    if (facs):
+        data['Field Aligned Current (uA/m2)'].append(fac2d)
+        if i == 0:
+
+            polarfile = os.path.abspath('electrodynamics_polar.png')
+
+            plot_polar_diagnostics(
+                mlts, lats,
+                pot2d,
+                eflux2d,
+                fac2d,
+                ocflb,
+                aeCurrent,
+                time_current,
+                outfile=polarfile
+            )
 
 if (args["outfile"].find(".nc") > 0):
     # Write out in new netCDF format:

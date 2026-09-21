@@ -20,6 +20,10 @@ potential = np.array(ncfile.variables['Potential'])/1000.0
 eflux = np.array(ncfile.variables['EFlux'])
 times_in_s = np.array(ncfile.variables['Time'])
 
+hasFac = 'FAC' in ncfile.variables
+if hasFac:
+    fac = np.array(ncfile.variables['FAC'])
+
 nTimes = len(times_in_s)
 base = datetime(1965,1,1,0,0,0)
 times = []
@@ -66,7 +70,36 @@ for iT in np.arange(0,nTimes,di):
     cax.append(ax[-1].pcolor(theta, r, eflux2d, \
                              vmin = mini, vmax = maxi, cmap = cmap))
     ax[-1].contour(theta, r, pot2d, levelp, colors = 'k')
-    #fig.colorbar(cax[-1])
+    fig.colorbar(cax[-1])
 
 fig.savefig('netcdf_test.png')
 plt.close()
+mlt_ticks = np.arange(0, 24, 3)
+if hasFac:
+
+    maxFac = np.max(np.abs(fac))
+    print('maxFac = ', maxFac)
+    normFac = cm.colors.Normalize(vmax=maxFac, vmin=-maxFac)
+
+    fig = plt.figure(figsize = (10,10))
+
+    iPlot = 1
+    ax = []
+    cax = []
+    for iT in np.arange(0,nTimes,di):
+
+        subplot = 330 + iPlot
+        iPlot += 1
+        ax.append(fig.add_subplot(subplot, projection = 'polar'))
+
+        pot2d = potential[iT]
+        fac2d = fac[iT]
+
+        cax.append(ax[-1].pcolor(theta, r, fac2d, \
+                                 vmin = -maxFac, vmax = maxFac, cmap = cm.bwr))
+        # ax[-1].contour(theta, r, pot2d, levelp, colors = 'k')
+        ax[-1].set_xticklabels([f"{val:.1f}" for val in mlt_ticks])
+        fig.colorbar(cax[-1])
+
+    fig.savefig('netcdf_test_fac.png')
+    plt.close()
