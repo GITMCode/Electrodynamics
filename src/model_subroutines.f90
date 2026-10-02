@@ -220,18 +220,18 @@
     iFirst = 1
     do iLat = 1, ie%neednLats
       do iMLT = 1, ie%neednMLTs
-          call hmrepot( &
-            ie%needLats(iMlt, iLat), &
-            ie%needMlts(iMlt, iLat), &
-            ie%needIMFBy, &
-            ie%needIMFBz, &
-            ie%needKp, &
-            iFirst, &
-            eTheta, &
-            ePhi, &
-            potVal)
-          potential(iMlt, iLat) = potVal*1000.0
-          iFirst = iFirst + 1
+        call hmrepot( &
+          ie%needLats(iMlt, iLat), &
+          ie%needMlts(iMlt, iLat), &
+          ie%needIMFBy, &
+          ie%needIMFBz, &
+          ie%needKp, &
+          iFirst, &
+          eTheta, &
+          ePhi, &
+          potVal)
+        potential(iMlt, iLat) = potVal*1000.0
+        iFirst = iFirst + 1
       enddo
     enddo
 
@@ -443,7 +443,7 @@
                     ie%neednLats), intent(inout) :: polarCap
     real :: eFluxVal, AveEVal, polarCapVal
     integer :: iError = 0, iMlt, iLat
-    logical :: isFtaLimitVal 
+    logical :: isFtaLimitVal
 
     if (iError /= 0) then
       call set_error('FTA Model update has an error!')
@@ -456,7 +456,7 @@
           ie%needMlts(iMlt, iLat), &
           ie%needLats(iMlt, iLat), &
           eFluxVal, AveEVal, polarCapVal, &
-          isFtaLimitVal,FtaAuVal,FtaAlVal,FtaAeVal)
+          isFtaLimitVal, FtaAuVal, FtaAlVal, FtaAeVal)
         eFlux(iMlt, iLat) = eFluxVal
         AveE(iMlt, iLat) = AveEVal
         polarCap(iMlt, iLat) = polarCapVal
