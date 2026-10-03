@@ -231,7 +231,7 @@
           0.0, &
           facVal)
 
-        ie%haveFAC(iMlt, iLat) = facVal
+        ie%haveFAC(iMlt, iLat) = facVal *-1.0
       enddo
     enddo
 
