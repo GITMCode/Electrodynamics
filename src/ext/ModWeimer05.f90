@@ -761,10 +761,13 @@ contains
     endif
     do i = 1, nu
       ix = value_locate(x, u(i))
-      if (ix <= 1 .or. ix >= nx) then ! bug fix by btf 12/23/09
+      if (ix < 1 .or. ix >= nx) then ! bug fix by btf 12/23/09 + alb 10/09/26
         p(i) = 0.
         cycle                       ! bug fix by btf 12/23/09
       endif
+      ! In the first interval (u between x(1) and x(2)) use x(1:3)
+      ! Returning 0 there zeroed every term within ~1/3 deg of the offset pole
+      ix = max(ix, 2)
       x1 = x(ix)
       x0 = x(ix - 1)
       x2 = x(ix + 1)
