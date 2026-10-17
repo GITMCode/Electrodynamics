@@ -174,6 +174,7 @@
 
     integer :: iMLT, iLat, iError
 
+    lastTilt = rBadValue
     do iLat = 1, ie%neednLats
       do iMLT = 1, ie%neednMLTs
         ! this is to check if we have changed hemispheres:
@@ -211,19 +212,24 @@
     ie%haveFAC = 0.0
     ! Same loop again for the field aligned currents
     ! Needed because Weimer must be initialized differently
+    ! Force the first iteration below to call setmodel with 'bpot':
+    ! lastTilt was left holding the last 'epot' tilt from the loop above,
+    ! which otherwise suppresses the 'bpot' setmodel call entirely.
+    lastTilt = rBadValue
     do iLat = 1, ie%neednLats
       do iMLT = 1, ie%neednMLTs
         ! this is to check if we have changed hemispheres:
-        currentTilt = sign(ie%weimerTilt, ie%needLats(iMlt, iLat))
+        currentTilt = ie%weimerTilt*sign(1.0, ie%needLats(iMlt, iLat))
         if (currentTilt .ne. lastTilt) then
           ! Call with 'bpot' mode instead of 'epot'
           ! Tells Weimer05 to use the Birkeland-derived coeffs
           call setmodel( &
-            ie%needIMFBy, &
+            ie%needIMFBy*sign(1.0, ie%needLats(iMlt, iLat)), &
             ie%needIMFBz, &
             currentTilt, &
             ie%needSWV, &
             ie%needSWN, 'bpot')
+          lastTilt = currentTilt
         endif
         call mpfac( &
           abs(ie%needLats(iMlt, iLat)), &
