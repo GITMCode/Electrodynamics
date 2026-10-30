@@ -358,11 +358,11 @@ def read_all_rim_files(filelist):
 
         dataToWriteN['times'].append(dataOneFile['time'])
         dataToWriteS['times'].append(dataOneFile['time'])
-        
-        cpcpN = np.max(dataToWriteN[cPot][-1]) - np.min(dataToWriteN[cPot][-1])
-        cpcpS = np.max(dataToWriteS[cPot][-1]) - np.min(dataToWriteS[cPot][-1])
-        hpN = np.sum(area * dataToWriteN[cEflux][-1]) / 1e9
-        hpS = np.sum(area * dataToWriteS[cEflux][-1]) / 1e9
+
+        cpcpN = (np.max(dataToWriteN[cPot][iT]) - np.min(dataToWriteN[cPot][iT])) / 1000.0
+        cpcpS = (np.max(dataToWriteS[cPot][iT]) - np.min(dataToWriteS[cPot][iT])) / 1000.0
+        hpN = np.sum(area * dataToWriteN[cEflux][iT] / 1000.0) / 1e9
+        hpS = np.sum(area * dataToWriteS[cEflux][iT] / 1000.0) / 1e9
         
         dataToWriteN["imf"].append([-1e32, -1e32, -1e32, -1e32])
         dataToWriteN["ae"].append([-1e32, -1e32, -1e32, 0.0])
