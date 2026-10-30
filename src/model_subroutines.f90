@@ -482,7 +482,9 @@
     endif
     facs = 0.0
 
-    if (ie%iAurora_ == iAmieAur_) then
+    ! AMIE files are read when either the potential or the aurora is AMIE,
+    ! so FACs from the file (e.g. AMPERE) can be used with any aurora model.
+    if (ie%iAurora_ == iAmieAur_ .or. ie%iEfield_ == iAmiePot_) then
       call get_amie_fac(facs)
     else
       ! Should only be available to Weimer...
