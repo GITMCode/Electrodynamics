@@ -113,14 +113,21 @@ def read_rim_ascii_file(filename):
         nwrap += 1
 
     # Fill data arrays:
-    for j in range(nPts):
-        # Build list of variables; accounting for line-wrapping:
-        parts = []
-        iLine = i + j*nwrap
-        for iwrap in range(nwrap):
-            parts += raw[iLine+iwrap].split()
-        for k in range(dataOut['nvars']):
-            dataOut['n_'+namevar[k]][j] = parts[k]
+    try:
+        for j in range(nPts):
+            # Build list of variables; accounting for line-wrapping:
+            parts = []
+            iLine = i + j*nwrap
+            for iwrap in range(nwrap):
+                parts += raw[iLine+iwrap].split()
+            for k in range(dataOut['nvars']):
+                dataOut['n_'+namevar[k]][j] = parts[k]
+    except IndexError:
+        # Sometimes the RIM files are concat-ed before N/S blocks are written
+        # In this case, just skip. The AMIE readers can handle gaps
+        print('   -> Nonfatal error in:', filename)
+        raise ValueError("Could not parse %s" %filename)
+    
     i = raw.index('BEGIN SOUTHERN HEMISPHERE\n')+1
     for j in range(nPts):
         parts = []
@@ -153,7 +160,14 @@ def read_all_rim_files(filelist):
 
     # Let's get some information before starting this:
     nTimes = len(filelist)
-    dataOneFile = read_rim_ascii_file(filelist[0])
+    for file in filelist:
+        try:
+            dataOneFile = read_rim_ascii_file(file)
+            break
+        except (ValueError, IndexError):
+            continue
+    else:
+        raise ValueError('No readable RIM files in this chunk')
 
     nLats = dataOneFile['ntheta']
     nMlts = dataOneFile['nphi']
@@ -295,9 +309,19 @@ def read_all_rim_files(filelist):
     print('-> Number of lats to read : ', nLats)
     print('-> Number of mlts to read : ', nMlts)
     print('-> Number of variables to write : ', len(outVars))
+
+    # Separate the file counter & time counter so bad files don't get filled with zeros
+    nFilesWithErrors = 0
+    erroneousFilenames = []
+    iT = 0
     
-    for iT, file in enumerate(filelist):
-        dataOneFile = read_rim_ascii_file(file)
+    for iFile, file in enumerate(filelist):
+        try:
+            dataOneFile = read_rim_ascii_file(file)
+        except (ValueError, IndexError):
+            nFilesWithErrors += 1
+            erroneousFilenames.append(file)
+            continue
 
         # This allows us to identify the open field-line region
         # if rt 1/b is negative, this is an open field-line
@@ -351,10 +375,21 @@ def read_all_rim_files(filelist):
         dataToWriteS["dst"].append([0.0, 0.0])
         dataToWriteS["hp"].append([hpS, 0.0])
         dataToWriteS["cpcp"].append(cpcpS)
-        
+
+        iT += 1
+
     dataToWriteN['nTimes'] = len(dataToWriteN['times'])
     dataToWriteS['nTimes'] = len(dataToWriteS['times'])
 
+    if nFilesWithErrors > 0:
+        print(f"({nFilesWithErrors} / {nTimes}) files needed to be skipped")
+
+    # Trim out the bad times from the arrays
+    # (they are at the end b/c we have separate counters)
+    for var in dataToWriteN["Vars"]:
+        dataToWriteN[var] = dataToWriteN[var][:iT, ...]
+        dataToWriteS[var] = dataToWriteS[var][:iT, ...]
+        
     return dataToWriteN, dataToWriteS
 
 
